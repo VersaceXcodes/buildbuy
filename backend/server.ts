@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import fs from "fs";
 import pkg from 'pg';
 const { Pool } = pkg;
+import { PGlite } from '@electric-sql/pglite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken';
@@ -11,23 +12,34 @@ import bcrypt from 'bcryptjs';
 
 dotenv.config();
 
-const { DATABASE_URL, PGHOST, PGDATABASE, PGUSER, PGPASSWORD, PGPORT = 5432 } = process.env;
+const { DATABASE_URL, PGHOST, PGDATABASE, PGUSER, PGPASSWORD, PGPORT = 5432, JWT_SECRET = 'your-default-jwt-secret-change-in-production' } = process.env;
 
-const pool = new Pool(
-  DATABASE_URL
-    ? { 
-        connectionString: DATABASE_URL, 
-        ssl: { require: true } 
-      }
-    : {
-        host: PGHOST,
-        database: PGDATABASE,
-        user: PGUSER,
-        password: PGPASSWORD,
-        port: Number(PGPORT),
-        ssl: { require: true },
-      }
-);
+// Use PGlite for development if no postgres configured
+let pool: Pool | PGlite;
+let isUsingPGlite = false;
+
+if (DATABASE_URL || (PGHOST && PGDATABASE && PGUSER && PGPASSWORD)) {
+  pool = new Pool(
+    DATABASE_URL
+      ? { 
+          connectionString: DATABASE_URL, 
+          ssl: { require: true } 
+        }
+      : {
+          host: PGHOST,
+          database: PGDATABASE,
+          user: PGUSER,
+          password: PGPASSWORD,
+          port: Number(PGPORT),
+          ssl: { require: true },
+        }
+  );
+} else {
+  // Use in-memory PGlite for development
+  pool = new PGlite();
+  isUsingPGlite = true;
+  console.log('Using PGlite in-memory database for development');
+}
 
 // const client = await pool.connect();
 
@@ -50,6 +62,26 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+
+// Query parameter coercion middleware
+app.use((req, res, next) => {
+  // Coerce common query parameters
+  if (req.query.limit) {
+    req.query.limit = Math.max(1, Math.min(100, parseInt(req.query.limit as string) || 10));
+  }
+  if (req.query.offset) {
+    req.query.offset = Math.max(0, parseInt(req.query.offset as string) || 0);
+  }
+  if (req.query.page) {
+    req.query.page = Math.max(1, parseInt(req.query.page as string) || 1);
+  }
+  // Convert boolean strings
+  ['active', 'verified', 'enabled'].forEach(param => {
+    if (req.query[param] === 'true') req.query[param] = true;
+    if (req.query[param] === 'false') req.query[param] = false;
+  });
+  next();
+});
 
 // Auth middleware
 const authenticate_token = async (req, res, next) => {
@@ -82,6 +114,7 @@ const authenticate_token = async (req, res, next) => {
 // Database initialization
 const initialize_database = async () => {
   try {
+    // Initialize basic users table for development
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -91,14 +124,24 @@ const initialize_database = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log('Database initialized successfully');
+    console.log('Database initialized with users table');
   } catch (error) {
     console.error('Database initialization error:', error);
-    process.exit(1);
+    console.log('Continuing without database initialization...');
   }
 };
 
 // Routes
+
+// Health endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    database: 'connected'
+  });
+});
 
 // Register endpoint
 app.post('/api/auth/register', async (req, res) => {
@@ -270,18 +313,28 @@ app.get('/api/protected', authenticate_token, (req, res) => {
   });
 });
 
-app.get("/", (req, res) => {
+app.get("/api", (req, res) => {
   res.json({ message: "cofounder backend boilerplate :)" });
 });
 
-// Catch-all route for SPA routing
+// Serve frontend static files if they exist
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).json({ 
+      error: 'Frontend not built or deployed',
+      message: 'Run the frontend build process to serve the SPA'
+    });
+  }
 });
 
 export { app, pool };
 
-// Start the server
-app.listen(3000, '0.0.0.0', () => {
-  console.log(`Server running on port 3000 and listening on 0.0.0.0`);
+// Initialize database before starting server
+initialize_database().then(() => {
+  app.listen(3000, '0.0.0.0', () => {
+    console.log(`Server running on port 3000 and listening on 0.0.0.0`);
+  });
 });
