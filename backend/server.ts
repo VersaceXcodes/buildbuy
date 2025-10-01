@@ -300,6 +300,29 @@ app.put('/api/auth/profile', authenticate_token, async (req, res) => {
   }
 });
 
+// Users endpoint for general user queries  
+app.get('/api/users', authenticate_token, async (req, res) => {
+  try {
+    const { limit = 10, offset = 0, search = '' } = req.query;
+    const searchFilter = search ? `WHERE name ILIKE '%${search}%' OR email ILIKE '%${search}%'` : '';
+    
+    const result = await pool.query(
+      `SELECT id, email, name, created_at FROM users ${searchFilter} ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+    
+    res.json({
+      users: result.rows,
+      total: result.rows.length,
+      limit: Number(limit),
+      offset: Number(offset)
+    });
+  } catch (error) {
+    console.error('Users query error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // Example protected endpoint
 app.get('/api/protected', authenticate_token, (req, res) => {
   res.json({
