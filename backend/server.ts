@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from "cors";
 import dotenv from "dotenv";
 import fs from "fs";
@@ -7,15 +7,29 @@ const { Pool } = pkg;
 import { PGlite } from '@electric-sql/pglite';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
 dotenv.config();
 
 const { DATABASE_URL, PGHOST, PGDATABASE, PGUSER, PGPASSWORD, PGPORT = 5432, JWT_SECRET = 'your-default-jwt-secret-change-in-production' } = process.env;
 
+interface UserPayload extends JwtPayload {
+  user_id: number;
+  email: string;
+}
+
+interface AuthRequest extends Request {
+  user?: {
+    id: number;
+    email: string;
+    name: string;
+    created_at: Date;
+  };
+}
+
 // Use PGlite for development if no postgres configured
-let pool: Pool | PGlite;
+let pool: InstanceType<typeof Pool> | PGlite;
 let isUsingPGlite = false;
 
 if (DATABASE_URL || (PGHOST && PGDATABASE && PGUSER && PGPASSWORD)) {
@@ -23,7 +37,7 @@ if (DATABASE_URL || (PGHOST && PGDATABASE && PGUSER && PGPASSWORD)) {
     DATABASE_URL
       ? { 
           connectionString: DATABASE_URL, 
-          ssl: { require: true } 
+          ssl: { rejectUnauthorized: false } 
         }
       : {
           host: PGHOST,
@@ -31,7 +45,7 @@ if (DATABASE_URL || (PGHOST && PGDATABASE && PGUSER && PGPASSWORD)) {
           user: PGUSER,
           password: PGPASSWORD,
           port: Number(PGPORT),
-          ssl: { require: true },
+          ssl: { rejectUnauthorized: false },
         }
   );
 } else {
@@ -40,6 +54,15 @@ if (DATABASE_URL || (PGHOST && PGDATABASE && PGUSER && PGPASSWORD)) {
   isUsingPGlite = true;
   console.log('Using PGlite in-memory database for development');
 }
+
+// Helper function to query the database (works with both Pool and PGlite)
+const queryDb = async (text: string, params?: any[]) => {
+  if (isUsingPGlite) {
+    return await (pool as PGlite).query(text, params);
+  } else {
+    return await (pool as InstanceType<typeof Pool>).query(text, params);
+  }
+};
 
 // const client = await pool.connect();
 
@@ -67,24 +90,24 @@ app.use(express.json());
 app.use((req, res, next) => {
   // Coerce common query parameters
   if (req.query.limit) {
-    req.query.limit = Math.max(1, Math.min(100, parseInt(req.query.limit as string) || 10));
+    req.query.limit = String(Math.max(1, Math.min(100, parseInt(req.query.limit as string) || 10)));
   }
   if (req.query.offset) {
-    req.query.offset = Math.max(0, parseInt(req.query.offset as string) || 0);
+    req.query.offset = String(Math.max(0, parseInt(req.query.offset as string) || 0));
   }
   if (req.query.page) {
-    req.query.page = Math.max(1, parseInt(req.query.page as string) || 1);
+    req.query.page = String(Math.max(1, parseInt(req.query.page as string) || 1));
   }
   // Convert boolean strings
   ['active', 'verified', 'enabled'].forEach(param => {
-    if (req.query[param] === 'true') req.query[param] = true;
-    if (req.query[param] === 'false') req.query[param] = false;
+    if (req.query[param] === 'true') req.query[param] = 'true';
+    if (req.query[param] === 'false') req.query[param] = 'false';
   });
   next();
 });
 
 // Auth middleware
-const authenticate_token = async (req, res, next) => {
+const authenticate_token = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -93,8 +116,8 @@ const authenticate_token = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const result = await pool.query(
+    const decoded = jwt.verify(token, JWT_SECRET) as UserPayload;
+    const result = await queryDb(
       'SELECT id, email, name, created_at FROM users WHERE id = $1', 
       [decoded.user_id]
     );
@@ -115,7 +138,7 @@ const authenticate_token = async (req, res, next) => {
 const initialize_database = async () => {
   try {
     // Initialize basic users table for development
-    await pool.query(`
+    await queryDb(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
@@ -158,7 +181,7 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     // Check if user exists
-    const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    const existingUser = await queryDb('SELECT id FROM users WHERE email = $1', [email]);
     if (existingUser.rows.length > 0) {
       return res.status(400).json({ message: 'User with this email already exists' });
     }
@@ -168,7 +191,7 @@ app.post('/api/auth/register', async (req, res) => {
     const hashed_password = await bcrypt.hash(password, salt_rounds);
 
     // Create user
-    const result = await pool.query(
+    const result = await queryDb(
       'INSERT INTO users (email, password, name) VALUES ($1, $2, $3) RETURNING id, email, name, created_at',
       [email.toLowerCase().trim(), hashed_password, name.trim()]
     );
@@ -209,7 +232,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // Find user
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+    const result = await queryDb('SELECT * FROM users WHERE email = $1', [email.toLowerCase().trim()]);
     if (result.rows.length === 0) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
@@ -246,41 +269,41 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // Verify token endpoint
-app.get('/api/auth/verify', authenticate_token, (req, res) => {
+app.get('/api/auth/verify', authenticate_token, (req: AuthRequest, res: Response) => {
   res.json({
     message: 'Token is valid',
     user: {
-      id: req.user.id,
-      email: req.user.email,
-      name: req.user.name,
-      created_at: req.user.created_at
+      id: req.user!.id,
+      email: req.user!.email,
+      name: req.user!.name,
+      created_at: req.user!.created_at
     }
   });
 });
 
 // Get current user endpoint
-app.get('/api/auth/me', authenticate_token, (req, res) => {
+app.get('/api/auth/me', authenticate_token, (req: AuthRequest, res: Response) => {
   res.json({
     user: {
-      id: req.user.id,
-      email: req.user.email,
-      name: req.user.name,
-      created_at: req.user.created_at
+      id: req.user!.id,
+      email: req.user!.email,
+      name: req.user!.name,
+      created_at: req.user!.created_at
     }
   });
 });
 
 // Update user profile endpoint
-app.put('/api/auth/profile', authenticate_token, async (req, res) => {
+app.put('/api/auth/profile', authenticate_token, async (req: AuthRequest, res: Response) => {
   try {
     const { name } = req.body;
-    const user_id = req.user.id;
+    const user_id = req.user!.id;
 
     if (!name || name.trim().length === 0) {
       return res.status(400).json({ message: 'Name is required' });
     }
 
-    const result = await pool.query(
+    const result = await queryDb(
       'UPDATE users SET name = $1 WHERE id = $2 RETURNING id, email, name, created_at',
       [name.trim(), user_id]
     );
@@ -301,12 +324,12 @@ app.put('/api/auth/profile', authenticate_token, async (req, res) => {
 });
 
 // Users endpoint for general user queries  
-app.get('/api/users', authenticate_token, async (req, res) => {
+app.get('/api/users', authenticate_token, async (req: AuthRequest, res: Response) => {
   try {
     const { limit = 10, offset = 0, search = '' } = req.query;
     const searchFilter = search ? `WHERE name ILIKE '%${search}%' OR email ILIKE '%${search}%'` : '';
     
-    const result = await pool.query(
+    const result = await queryDb(
       `SELECT id, email, name, created_at FROM users ${searchFilter} ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
       [limit, offset]
     );
@@ -324,13 +347,13 @@ app.get('/api/users', authenticate_token, async (req, res) => {
 });
 
 // Example protected endpoint
-app.get('/api/protected', authenticate_token, (req, res) => {
+app.get('/api/protected', authenticate_token, (req: AuthRequest, res: Response) => {
   res.json({
     message: 'This is a protected endpoint',
     user: {
-      id: req.user.id,
-      email: req.user.email,
-      name: req.user.name,
+      id: req.user!.id,
+      email: req.user!.email,
+      name: req.user!.name,
     },
     timestamp: new Date().toISOString()
   });
