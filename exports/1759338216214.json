@@ -1,0 +1,15 @@
+{
+  "timestamp": 1759338216214,
+  "operation": {
+    "id": "db:postgres"
+  },
+  "projectId": "buildbuy",
+  "files": [
+    {
+      "path": "/mnt/data/buildbuy/backend/db.sql",
+      "type": "text",
+      "size": 87986,
+      "dependencies": false
+    }
+  ]
+}

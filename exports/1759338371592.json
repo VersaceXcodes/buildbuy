@@ -1,0 +1,15 @@
+{
+  "timestamp": 1759338371592,
+  "operation": {
+    "id": "db:schemas:zod"
+  },
+  "projectId": "buildbuy",
+  "files": [
+    {
+      "path": "/mnt/data/buildbuy/backend/schema.ts",
+      "type": "text",
+      "size": 51598,
+      "dependencies": false
+    }
+  ]
+}

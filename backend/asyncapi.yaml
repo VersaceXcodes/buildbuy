@@ -1,0 +1,3107 @@
+asyncapi: 2.6.0
+info:
+  title: BuildBuy Real-time Events API
+  version: 1.0.0
+  description: >
+    Real-time WebSocket events for BuildBuy B2B construction materials
+    marketplace.
+
+    Covers RFQ workflows, order tracking, notifications, price alerts, and
+    collaborative features.
+  contact:
+    name: BuildBuy API Team
+    email: api@buildbuy.com
+servers:
+  development:
+    url: ws://localhost:3000/ws
+    protocol: ws
+    description: Local development WebSocket server
+  production:
+    url: wss://api.buildbuy.com/ws
+    protocol: wss
+    description: Production WebSocket server
+channels:
+  user/{user_id}/notifications:
+    description: User-specific notification events stream
+    parameters:
+      user_id:
+        description: Unique identifier of the user
+        schema:
+          type: string
+    subscribe:
+      summary: Receive real-time notifications for user
+      message:
+        oneOf:
+          - $ref: "#/components/messages/NewNotification"
+          - $ref: "#/components/messages/NotificationRead"
+          - $ref: "#/components/messages/NotificationCountUpdate"
+  user/{user_id}/session:
+    description: User session events
+    parameters:
+      user_id:
+        schema:
+          type: string
+    subscribe:
+      summary: Receive session-related events
+      message:
+        oneOf:
+          - $ref: "#/components/messages/SessionExpiring"
+          - $ref: "#/components/messages/SessionTerminated"
+          - $ref: "#/components/messages/ForceLogout"
+  buyer/{buyer_id}/rfqs:
+    description: Buyer's RFQ activity stream
+    parameters:
+      buyer_id:
+        schema:
+          type: string
+    subscribe:
+      summary: Real-time RFQ events for buyer
+      message:
+        oneOf:
+          - $ref: "#/components/messages/QuoteReceived"
+          - $ref: "#/components/messages/QuoteUpdated"
+          - $ref: "#/components/messages/QuoteWithdrawn"
+          - $ref: "#/components/messages/QuoteExpiring"
+          - $ref: "#/components/messages/RFQExpiringSoon"
+          - $ref: "#/components/messages/VendorDeclinedRFQ"
+          - $ref: "#/components/messages/CounterProposalReceived"
+  buyer/{buyer_id}/orders:
+    description: Buyer's order tracking stream
+    parameters:
+      buyer_id:
+        schema:
+          type: string
+    subscribe:
+      summary: Real-time order status updates for buyer
+      message:
+        oneOf:
+          - $ref: "#/components/messages/OrderConfirmed"
+          - $ref: "#/components/messages/OrderDeclined"
+          - $ref: "#/components/messages/OrderStatusChanged"
+          - $ref: "#/components/messages/OrderDispatched"
+          - $ref: "#/components/messages/OrderOutForDelivery"
+          - $ref: "#/components/messages/OrderDelivered"
+          - $ref: "#/components/messages/OrderCashCollected"
+          - $ref: "#/components/messages/DeliveryTrackingUpdate"
+  buyer/{buyer_id}/alerts:
+    description: Buyer's price and product alerts
+    parameters:
+      buyer_id:
+        schema:
+          type: string
+    subscribe:
+      summary: Price drops and saved search matches
+      message:
+        oneOf:
+          - $ref: "#/components/messages/PriceDropAlert"
+          - $ref: "#/components/messages/SavedSearchMatch"
+          - $ref: "#/components/messages/FavoriteProductBackInStock"
+  vendor/{vendor_id}/rfqs:
+    description: Vendor's incoming RFQ stream
+    parameters:
+      vendor_id:
+        schema:
+          type: string
+    subscribe:
+      summary: New RFQs and updates for vendor
+      message:
+        oneOf:
+          - $ref: "#/components/messages/NewRFQReceived"
+          - $ref: "#/components/messages/RFQClosed"
+          - $ref: "#/components/messages/RFQMessageReceived"
+          - $ref: "#/components/messages/QuoteAccepted"
+          - $ref: "#/components/messages/CounterProposalSent"
+          - $ref: "#/components/messages/RFQReminder"
+  vendor/{vendor_id}/orders:
+    description: Vendor's order fulfillment stream
+    parameters:
+      vendor_id:
+        schema:
+          type: string
+    subscribe:
+      summary: New orders and fulfillment events
+      message:
+        oneOf:
+          - $ref: "#/components/messages/NewOrderReceived"
+          - $ref: "#/components/messages/OrderCancellationRequest"
+          - $ref: "#/components/messages/OrderMessageReceived"
+  vendor/{vendor_id}/inventory:
+    description: Vendor's inventory alerts
+    parameters:
+      vendor_id:
+        schema:
+          type: string
+    subscribe:
+      summary: Stock level alerts and warnings
+      message:
+        oneOf:
+          - $ref: "#/components/messages/LowStockAlert"
+          - $ref: "#/components/messages/OutOfStockAlert"
+          - $ref: "#/components/messages/StockReplenished"
+  vendor/{vendor_id}/reviews:
+    description: Vendor's review notifications
+    parameters:
+      vendor_id:
+        schema:
+          type: string
+    subscribe:
+      summary: New reviews and ratings
+      message:
+        $ref: "#/components/messages/NewReviewReceived"
+  vendor/{vendor_id}/verification:
+    description: Vendor verification status updates
+    parameters:
+      vendor_id:
+        schema:
+          type: string
+    subscribe:
+      summary: Verification process updates
+      message:
+        oneOf:
+          - $ref: "#/components/messages/VerificationApproved"
+          - $ref: "#/components/messages/VerificationRejected"
+          - $ref: "#/components/messages/VerificationInfoRequested"
+  rfq/{rfq_id}/messages:
+    description: RFQ-specific message thread
+    parameters:
+      rfq_id:
+        schema:
+          type: string
+    subscribe:
+      summary: Real-time messages in RFQ thread
+      message:
+        $ref: "#/components/messages/RFQMessageSent"
+    publish:
+      summary: Send message in RFQ thread
+      message:
+        $ref: "#/components/messages/SendRFQMessage"
+  rfq/{rfq_id}/negotiation:
+    description: RFQ negotiation events
+    parameters:
+      rfq_id:
+        schema:
+          type: string
+    subscribe:
+      summary: Negotiation round updates
+      message:
+        oneOf:
+          - $ref: "#/components/messages/NegotiationRoundStarted"
+          - $ref: "#/components/messages/NegotiationRoundCompleted"
+          - $ref: "#/components/messages/NegotiationLimitReached"
+  order/{order_id}/messages:
+    description: Order-specific message thread
+    parameters:
+      order_id:
+        schema:
+          type: string
+    subscribe:
+      summary: Real-time messages in order thread
+      message:
+        $ref: "#/components/messages/OrderMessageSent"
+    publish:
+      summary: Send message in order thread
+      message:
+        $ref: "#/components/messages/SendOrderMessage"
+  order/{order_id}/tracking:
+    description: Live order tracking updates
+    parameters:
+      order_id:
+        schema:
+          type: string
+    subscribe:
+      summary: Real-time delivery tracking
+      message:
+        oneOf:
+          - $ref: "#/components/messages/DriverLocationUpdate"
+          - $ref: "#/components/messages/EstimatedArrivalUpdate"
+          - $ref: "#/components/messages/DeliveryDelayed"
+  organization/{organization_id}/activity:
+    description: Organization-wide activity stream
+    parameters:
+      organization_id:
+        schema:
+          type: string
+    subscribe:
+      summary: Organization member activities
+      message:
+        oneOf:
+          - $ref: "#/components/messages/MemberRFQCreated"
+          - $ref: "#/components/messages/MemberOrderPlaced"
+          - $ref: "#/components/messages/NewMemberJoined"
+          - $ref: "#/components/messages/MemberRemoved"
+          - $ref: "#/components/messages/OrganizationSettingsChanged"
+  organization/{organization_id}/invitations:
+    description: Organization invitation events
+    parameters:
+      organization_id:
+        schema:
+          type: string
+    subscribe:
+      summary: Invitation status updates
+      message:
+        oneOf:
+          - $ref: "#/components/messages/InvitationSent"
+          - $ref: "#/components/messages/InvitationAccepted"
+          - $ref: "#/components/messages/InvitationDeclined"
+          - $ref: "#/components/messages/InvitationExpired"
+  dispute/{dispute_id}/updates:
+    description: Dispute resolution updates
+    parameters:
+      dispute_id:
+        schema:
+          type: string
+    subscribe:
+      summary: Real-time dispute events
+      message:
+        oneOf:
+          - $ref: "#/components/messages/DisputeCreated"
+          - $ref: "#/components/messages/DisputeStatusChanged"
+          - $ref: "#/components/messages/DisputeMessageReceived"
+          - $ref: "#/components/messages/DisputeResolved"
+          - $ref: "#/components/messages/DisputeEvidenceUploaded"
+  admin/vendors:
+    description: Admin vendor verification queue
+    subscribe:
+      summary: New vendors pending verification
+      message:
+        oneOf:
+          - $ref: "#/components/messages/NewVendorPendingVerification"
+          - $ref: "#/components/messages/VendorDocumentUploaded"
+  admin/disputes:
+    description: Admin dispute management
+    subscribe:
+      summary: New disputes requiring attention
+      message:
+        oneOf:
+          - $ref: "#/components/messages/NewDisputeCreated"
+          - $ref: "#/components/messages/DisputeEscalated"
+  admin/system:
+    description: System-wide admin alerts
+    subscribe:
+      summary: Platform health and critical alerts
+      message:
+        oneOf:
+          - $ref: "#/components/messages/SystemErrorAlert"
+          - $ref: "#/components/messages/HighErrorRateAlert"
+          - $ref: "#/components/messages/FailedImportAlert"
+  product/{product_id}/offers:
+    description: Real-time product offer updates
+    parameters:
+      product_id:
+        schema:
+          type: string
+    subscribe:
+      summary: Vendor offer changes for product
+      message:
+        oneOf:
+          - $ref: "#/components/messages/NewOfferAdded"
+          - $ref: "#/components/messages/OfferPriceChanged"
+          - $ref: "#/components/messages/OfferStockChanged"
+          - $ref: "#/components/messages/OfferRemoved"
+  comparison/session:
+    description: Comparison session updates (for collaborative comparison)
+    subscribe:
+      summary: Shared comparison updates
+      message:
+        oneOf:
+          - $ref: "#/components/messages/ComparisonOfferAdded"
+          - $ref: "#/components/messages/ComparisonOfferRemoved"
+          - $ref: "#/components/messages/ComparisonShared"
+components:
+  messages:
+    NewNotification:
+      name: notification.new
+      title: New Notification
+      summary: A new notification has been created for the user
+      payload:
+        type: object
+        required:
+          - notification_id
+          - user_id
+          - notification_type
+          - category
+          - title
+          - message
+          - created_at
+        properties:
+          notification_id:
+            type: string
+            description: Unique notification identifier
+          user_id:
+            type: string
+            description: Target user ID
+          notification_type:
+            type: string
+            description: Type of notification
+            enum:
+              - rfq_quote_received
+              - rfq_expiring
+              - order_status_change
+              - order_delivered
+              - price_drop
+              - review_received
+              - verification_approved
+              - dispute_created
+              - organization_invitation
+          category:
+            type: string
+            description: Notification category
+            enum:
+              - rfq
+              - order
+              - product
+              - review
+              - account
+              - organization
+              - system
+          title:
+            type: string
+            description: Notification title
+          message:
+            type: string
+            description: Notification message body
+          link_url:
+            type: string
+            nullable: true
+            description: Deep link URL to related resource
+          entity_type:
+            type: string
+            nullable: true
+            description: Type of related entity
+          entity_id:
+            type: string
+            nullable: true
+            description: ID of related entity
+          is_read:
+            type: boolean
+            description: Read status
+            default: false
+          created_at:
+            type: string
+            format: date-time
+            description: Notification creation timestamp
+    NotificationRead:
+      name: notification.read
+      title: Notification Read
+      summary: User has read a notification
+      payload:
+        type: object
+        required:
+          - notification_id
+          - user_id
+          - read_at
+        properties:
+          notification_id:
+            type: string
+          user_id:
+            type: string
+          read_at:
+            type: string
+            format: date-time
+    NotificationCountUpdate:
+      name: notification.count_update
+      title: Notification Count Update
+      summary: Updated unread notification count
+      payload:
+        type: object
+        required:
+          - user_id
+          - unread_count
+          - last_updated
+        properties:
+          user_id:
+            type: string
+          unread_count:
+            type: integer
+            minimum: 0
+          last_updated:
+            type: string
+            format: date-time
+    QuoteReceived:
+      name: rfq.quote_received
+      title: Quote Received
+      summary: Vendor has submitted a quote for buyer's RFQ
+      payload:
+        type: object
+        required:
+          - quote_id
+          - rfq_id
+          - rfq_number
+          - vendor_id
+          - vendor_name
+          - buyer_id
+          - product_name
+          - price_per_unit
+          - currency
+          - quantity_available
+          - lead_time_days
+          - valid_until
+          - created_at
+        properties:
+          quote_id:
+            type: string
+          rfq_id:
+            type: string
+          rfq_number:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          vendor_logo_url:
+            type: string
+            nullable: true
+          vendor_rating:
+            type: number
+            nullable: true
+            minimum: 0
+            maximum: 5
+          buyer_id:
+            type: string
+          product_id:
+            type: string
+          product_name:
+            type: string
+          price_per_unit:
+            type: number
+          currency:
+            type: string
+          quantity_available:
+            type: integer
+          min_order_quantity:
+            type: integer
+            nullable: true
+          max_order_quantity:
+            type: integer
+            nullable: true
+          delivery_fee:
+            type: number
+            nullable: true
+          lead_time_days:
+            type: integer
+          payment_terms:
+            type: string
+          valid_until:
+            type: string
+            format: date-time
+          notes:
+            type: string
+            nullable: true
+          attachments:
+            type: array
+            items:
+              type: object
+              required:
+                - file_name
+                - file_url
+              properties:
+                file_name:
+                  type: string
+                file_url:
+                  type: string
+          created_at:
+            type: string
+            format: date-time
+    QuoteUpdated:
+      name: rfq.quote_updated
+      title: Quote Updated
+      summary: Vendor has updated their quote
+      payload:
+        type: object
+        required:
+          - quote_id
+          - rfq_id
+          - vendor_id
+          - updated_fields
+          - updated_at
+        properties:
+          quote_id:
+            type: string
+          rfq_id:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          updated_fields:
+            type: array
+            items:
+              type: string
+            description: List of fields that were updated
+          price_per_unit:
+            type: number
+            nullable: true
+          quantity_available:
+            type: integer
+            nullable: true
+          lead_time_days:
+            type: integer
+            nullable: true
+          valid_until:
+            type: string
+            format: date-time
+            nullable: true
+          updated_at:
+            type: string
+            format: date-time
+    QuoteWithdrawn:
+      name: rfq.quote_withdrawn
+      title: Quote Withdrawn
+      summary: Vendor has withdrawn their quote
+      payload:
+        type: object
+        required:
+          - quote_id
+          - rfq_id
+          - vendor_id
+          - reason
+          - withdrawn_at
+        properties:
+          quote_id:
+            type: string
+          rfq_id:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          reason:
+            type: string
+          withdrawn_at:
+            type: string
+            format: date-time
+    QuoteExpiring:
+      name: rfq.quote_expiring
+      title: Quote Expiring Soon
+      summary: Quote will expire within 24 hours
+      payload:
+        type: object
+        required:
+          - quote_id
+          - rfq_id
+          - vendor_id
+          - expires_at
+          - hours_remaining
+        properties:
+          quote_id:
+            type: string
+          rfq_id:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          expires_at:
+            type: string
+            format: date-time
+          hours_remaining:
+            type: integer
+    RFQExpiringSoon:
+      name: rfq.expiring_soon
+      title: RFQ Expiring Soon
+      summary: RFQ will expire in 2 days
+      payload:
+        type: object
+        required:
+          - rfq_id
+          - rfq_number
+          - buyer_id
+          - expires_at
+          - days_remaining
+          - quotes_received_count
+        properties:
+          rfq_id:
+            type: string
+          rfq_number:
+            type: string
+          buyer_id:
+            type: string
+          product_name:
+            type: string
+          expires_at:
+            type: string
+            format: date-time
+          days_remaining:
+            type: integer
+          quotes_received_count:
+            type: integer
+          vendors_sent_to_count:
+            type: integer
+    VendorDeclinedRFQ:
+      name: rfq.vendor_declined
+      title: Vendor Declined RFQ
+      summary: Vendor has declined to quote on RFQ
+      payload:
+        type: object
+        required:
+          - rfq_id
+          - vendor_id
+          - reason
+          - declined_at
+        properties:
+          rfq_id:
+            type: string
+          rfq_number:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          reason:
+            type: string
+            enum:
+              - cannot_meet_quantity
+              - cannot_deliver_location
+              - price_expectations_low
+              - capacity_issues
+              - not_stocking_product
+              - other
+          reason_message:
+            type: string
+            nullable: true
+          declined_at:
+            type: string
+            format: date-time
+    CounterProposalReceived:
+      name: rfq.counter_proposal_received
+      title: Counter Proposal Received
+      summary: Vendor has responded to buyer's counter-proposal
+      payload:
+        type: object
+        required:
+          - negotiation_id
+          - quote_id
+          - rfq_id
+          - vendor_id
+          - round_number
+          - created_at
+        properties:
+          negotiation_id:
+            type: string
+          quote_id:
+            type: string
+          rfq_id:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          round_number:
+            type: integer
+          proposed_price:
+            type: number
+            nullable: true
+          proposed_quantity:
+            type: integer
+            nullable: true
+          proposed_terms:
+            type: string
+            nullable: true
+          message:
+            type: string
+            nullable: true
+          status:
+            type: string
+            enum:
+              - pending
+              - accepted
+              - declined
+          created_at:
+            type: string
+            format: date-time
+    NewRFQReceived:
+      name: rfq.new_received
+      title: New RFQ Received
+      summary: Vendor has received a new RFQ
+      payload:
+        type: object
+        required:
+          - rfq_id
+          - rfq_number
+          - buyer_id
+          - product_id
+          - product_name
+          - quantity
+          - delivery_city
+          - expires_at
+          - created_at
+        properties:
+          rfq_id:
+            type: string
+          rfq_number:
+            type: string
+          buyer_id:
+            type: string
+          buyer_name:
+            type: string
+          organization_id:
+            type: string
+            nullable: true
+          organization_name:
+            type: string
+            nullable: true
+          product_id:
+            type: string
+          product_name:
+            type: string
+          brand:
+            type: string
+          model:
+            type: string
+          quantity:
+            type: integer
+          unit_type:
+            type: string
+          delivery_address_id:
+            type: string
+          delivery_city:
+            type: string
+          delivery_state:
+            type: string
+          preferred_delivery_date:
+            type: string
+            format: date-time
+            nullable: true
+          notes:
+            type: string
+            nullable: true
+          attachments:
+            type: array
+            items:
+              type: object
+              properties:
+                file_name:
+                  type: string
+                file_url:
+                  type: string
+          expires_at:
+            type: string
+            format: date-time
+          created_at:
+            type: string
+            format: date-time
+    RFQClosed:
+      name: rfq.closed
+      title: RFQ Closed
+      summary: Buyer has closed the RFQ
+      payload:
+        type: object
+        required:
+          - rfq_id
+          - rfq_number
+          - vendor_id
+          - closed_reason
+          - closed_at
+        properties:
+          rfq_id:
+            type: string
+          rfq_number:
+            type: string
+          vendor_id:
+            type: string
+          buyer_name:
+            type: string
+          closed_reason:
+            type: string
+            enum:
+              - vendor_selected
+              - no_longer_needed
+              - prices_too_high
+              - other
+          closed_reason_message:
+            type: string
+            nullable: true
+          accepted_vendor_id:
+            type: string
+            nullable: true
+            description: ID of vendor whose quote was accepted, if applicable
+          closed_at:
+            type: string
+            format: date-time
+    RFQMessageReceived:
+      name: rfq.message_received
+      title: RFQ Message Received
+      summary: New message in RFQ thread
+      payload:
+        $ref: "#/components/schemas/RFQMessage"
+    QuoteAccepted:
+      name: rfq.quote_accepted
+      title: Quote Accepted
+      summary: Buyer has accepted vendor's quote
+      payload:
+        type: object
+        required:
+          - quote_id
+          - rfq_id
+          - vendor_id
+          - buyer_id
+          - accepted_at
+        properties:
+          quote_id:
+            type: string
+          rfq_id:
+            type: string
+          rfq_number:
+            type: string
+          vendor_id:
+            type: string
+          buyer_id:
+            type: string
+          buyer_name:
+            type: string
+          organization_name:
+            type: string
+            nullable: true
+          product_name:
+            type: string
+          quantity:
+            type: integer
+          total_amount:
+            type: number
+          currency:
+            type: string
+          accepted_at:
+            type: string
+            format: date-time
+    CounterProposalSent:
+      name: rfq.counter_proposal_sent
+      title: Counter Proposal Sent
+      summary: Buyer has sent a counter-proposal
+      payload:
+        type: object
+        required:
+          - negotiation_id
+          - quote_id
+          - rfq_id
+          - buyer_id
+          - round_number
+          - created_at
+        properties:
+          negotiation_id:
+            type: string
+          quote_id:
+            type: string
+          rfq_id:
+            type: string
+          buyer_id:
+            type: string
+          buyer_name:
+            type: string
+          round_number:
+            type: integer
+          proposed_price:
+            type: number
+            nullable: true
+          proposed_quantity:
+            type: integer
+            nullable: true
+          proposed_terms:
+            type: string
+            nullable: true
+          message:
+            type: string
+            nullable: true
+          created_at:
+            type: string
+            format: date-time
+    RFQReminder:
+      name: rfq.reminder
+      title: RFQ Reminder
+      summary: Reminder to respond to pending RFQ
+      payload:
+        type: object
+        required:
+          - rfq_id
+          - vendor_id
+          - expires_at
+          - hours_remaining
+        properties:
+          rfq_id:
+            type: string
+          rfq_number:
+            type: string
+          vendor_id:
+            type: string
+          buyer_name:
+            type: string
+          product_name:
+            type: string
+          expires_at:
+            type: string
+            format: date-time
+          hours_remaining:
+            type: integer
+    OrderConfirmed:
+      name: order.confirmed
+      title: Order Confirmed
+      summary: Vendor has confirmed the order
+      payload:
+        type: object
+        required:
+          - order_id
+          - order_number
+          - buyer_id
+          - vendor_id
+          - confirmed_at
+        properties:
+          order_id:
+            type: string
+          order_number:
+            type: string
+          buyer_id:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          product_name:
+            type: string
+          quantity:
+            type: integer
+          total_amount:
+            type: number
+          currency:
+            type: string
+          expected_delivery_date:
+            type: string
+            format: date-time
+            nullable: true
+          confirmed_at:
+            type: string
+            format: date-time
+    OrderDeclined:
+      name: order.declined
+      title: Order Declined
+      summary: Vendor has declined the order
+      payload:
+        type: object
+        required:
+          - order_id
+          - order_number
+          - buyer_id
+          - vendor_id
+          - reason
+          - declined_at
+        properties:
+          order_id:
+            type: string
+          order_number:
+            type: string
+          buyer_id:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          reason:
+            type: string
+            enum:
+              - inventory_issue
+              - capacity_issue
+              - pricing_error
+              - other
+          reason_message:
+            type: string
+            nullable: true
+          declined_at:
+            type: string
+            format: date-time
+    OrderStatusChanged:
+      name: order.status_changed
+      title: Order Status Changed
+      summary: Order status has been updated
+      payload:
+        type: object
+        required:
+          - order_id
+          - order_number
+          - buyer_id
+          - previous_status
+          - new_status
+          - changed_at
+        properties:
+          order_id:
+            type: string
+          order_number:
+            type: string
+          buyer_id:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          previous_status:
+            type: string
+          new_status:
+            type: string
+            enum:
+              - pending_vendor_confirmation
+              - confirmed
+              - preparing
+              - dispatched
+              - in_transit
+              - delivered
+              - cancelled
+              - vendor_declined
+          notes:
+            type: string
+            nullable: true
+          changed_by:
+            type: string
+          changed_at:
+            type: string
+            format: date-time
+    OrderDispatched:
+      name: order.dispatched
+      title: Order Dispatched
+      summary: Order has been marked as ready to dispatch
+      payload:
+        type: object
+        required:
+          - order_id
+          - order_number
+          - buyer_id
+          - vendor_id
+          - dispatched_at
+        properties:
+          order_id:
+            type: string
+          order_number:
+            type: string
+          buyer_id:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          product_name:
+            type: string
+          expected_delivery_date:
+            type: string
+            format: date-time
+            nullable: true
+          dispatched_at:
+            type: string
+            format: date-time
+    OrderOutForDelivery:
+      name: order.out_for_delivery
+      title: Order Out For Delivery
+      summary: Order is out for delivery with tracking details
+      payload:
+        type: object
+        required:
+          - order_id
+          - order_number
+          - buyer_id
+          - driver_name
+          - driver_contact
+          - dispatched_at
+        properties:
+          order_id:
+            type: string
+          order_number:
+            type: string
+          buyer_id:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          driver_name:
+            type: string
+          driver_contact:
+            type: string
+          vehicle_number:
+            type: string
+            nullable: true
+          estimated_delivery_time:
+            type: string
+            format: date-time
+            nullable: true
+          delivery_notes:
+            type: string
+            nullable: true
+          tracking_url:
+            type: string
+            nullable: true
+          dispatched_at:
+            type: string
+            format: date-time
+    OrderDelivered:
+      name: order.delivered
+      title: Order Delivered
+      summary: Order has been delivered
+      payload:
+        type: object
+        required:
+          - order_id
+          - order_number
+          - buyer_id
+          - delivered_at
+        properties:
+          order_id:
+            type: string
+          order_number:
+            type: string
+          buyer_id:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          actual_delivery_time:
+            type: string
+            format: date-time
+          recipient_name:
+            type: string
+            nullable: true
+          signature_url:
+            type: string
+            nullable: true
+          delivery_photo_url:
+            type: string
+            nullable: true
+          delivery_notes:
+            type: string
+            nullable: true
+          delivered_at:
+            type: string
+            format: date-time
+    OrderCashCollected:
+      name: order.cash_collected
+      title: Cash Collected
+      summary: Cash on delivery payment has been collected
+      payload:
+        type: object
+        required:
+          - order_id
+          - order_number
+          - buyer_id
+          - amount_collected
+          - collected_at
+        properties:
+          order_id:
+            type: string
+          order_number:
+            type: string
+          buyer_id:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          amount_collected:
+            type: number
+          currency:
+            type: string
+          collected_by:
+            type: string
+          collection_timestamp:
+            type: string
+            format: date-time
+          receipt_number:
+            type: string
+            nullable: true
+          collected_at:
+            type: string
+            format: date-time
+    DeliveryTrackingUpdate:
+      name: order.tracking_update
+      title: Delivery Tracking Update
+      summary: Real-time delivery tracking information
+      payload:
+        type: object
+        required:
+          - order_id
+          - update_type
+          - timestamp
+        properties:
+          order_id:
+            type: string
+          order_number:
+            type: string
+          update_type:
+            type: string
+            enum:
+              - location_update
+              - eta_update
+              - delay_notification
+              - route_change
+          current_location:
+            type: object
+            nullable: true
+            properties:
+              latitude:
+                type: number
+              longitude:
+                type: number
+              address:
+                type: string
+          estimated_arrival:
+            type: string
+            format: date-time
+            nullable: true
+          delay_reason:
+            type: string
+            nullable: true
+          delay_minutes:
+            type: integer
+            nullable: true
+          timestamp:
+            type: string
+            format: date-time
+    NewOrderReceived:
+      name: order.new_received
+      title: New Order Received
+      summary: Vendor has received a new order
+      payload:
+        type: object
+        required:
+          - order_id
+          - order_number
+          - vendor_id
+          - buyer_id
+          - product_id
+          - quantity
+          - total_amount
+          - currency
+          - created_at
+        properties:
+          order_id:
+            type: string
+          order_number:
+            type: string
+          vendor_id:
+            type: string
+          rfq_id:
+            type: string
+          quote_id:
+            type: string
+          buyer_id:
+            type: string
+          buyer_name:
+            type: string
+          organization_id:
+            type: string
+            nullable: true
+          organization_name:
+            type: string
+            nullable: true
+          product_id:
+            type: string
+          product_name:
+            type: string
+          brand:
+            type: string
+          model:
+            type: string
+          quantity:
+            type: integer
+          unit_price:
+            type: number
+          subtotal:
+            type: number
+          delivery_fee:
+            type: number
+            nullable: true
+          total_amount:
+            type: number
+          currency:
+            type: string
+          delivery_address:
+            type: object
+            required:
+              - address_line_1
+              - city
+              - state
+              - postal_code
+            properties:
+              contact_person_name:
+                type: string
+              contact_phone:
+                type: string
+              address_line_1:
+                type: string
+              address_line_2:
+                type: string
+                nullable: true
+              city:
+                type: string
+              state:
+                type: string
+              postal_code:
+                type: string
+              delivery_instructions:
+                type: string
+                nullable: true
+          expected_delivery_date:
+            type: string
+            format: date-time
+            nullable: true
+          payment_method:
+            type: string
+            default: cod
+          created_at:
+            type: string
+            format: date-time
+    OrderCancellationRequest:
+      name: order.cancellation_request
+      title: Order Cancellation Request
+      summary: Buyer has requested to cancel order
+      payload:
+        type: object
+        required:
+          - order_id
+          - order_number
+          - vendor_id
+          - buyer_id
+          - reason
+          - requested_at
+        properties:
+          order_id:
+            type: string
+          order_number:
+            type: string
+          vendor_id:
+            type: string
+          buyer_id:
+            type: string
+          buyer_name:
+            type: string
+          reason:
+            type: string
+          cancellation_message:
+            type: string
+            nullable: true
+          requested_at:
+            type: string
+            format: date-time
+    OrderMessageReceived:
+      name: order.message_received
+      title: Order Message Received
+      summary: New message in order thread
+      payload:
+        $ref: "#/components/schemas/OrderMessage"
+    LowStockAlert:
+      name: inventory.low_stock
+      title: Low Stock Alert
+      summary: Product stock has fallen below threshold
+      payload:
+        type: object
+        required:
+          - offer_id
+          - vendor_id
+          - product_id
+          - current_stock
+          - threshold
+          - alert_at
+        properties:
+          offer_id:
+            type: string
+          vendor_id:
+            type: string
+          product_id:
+            type: string
+          product_name:
+            type: string
+          current_stock:
+            type: integer
+          threshold:
+            type: integer
+          vendor_sku:
+            type: string
+            nullable: true
+          alert_at:
+            type: string
+            format: date-time
+    OutOfStockAlert:
+      name: inventory.out_of_stock
+      title: Out of Stock Alert
+      summary: Product is now out of stock
+      payload:
+        type: object
+        required:
+          - offer_id
+          - vendor_id
+          - product_id
+          - alert_at
+        properties:
+          offer_id:
+            type: string
+          vendor_id:
+            type: string
+          product_id:
+            type: string
+          product_name:
+            type: string
+          vendor_sku:
+            type: string
+            nullable: true
+          alert_at:
+            type: string
+            format: date-time
+    StockReplenished:
+      name: inventory.replenished
+      title: Stock Replenished
+      summary: Product stock has been replenished
+      payload:
+        type: object
+        required:
+          - offer_id
+          - vendor_id
+          - product_id
+          - new_stock_quantity
+          - updated_at
+        properties:
+          offer_id:
+            type: string
+          vendor_id:
+            type: string
+          product_id:
+            type: string
+          product_name:
+            type: string
+          previous_stock:
+            type: integer
+          new_stock_quantity:
+            type: integer
+          updated_at:
+            type: string
+            format: date-time
+    PriceDropAlert:
+      name: alert.price_drop
+      title: Price Drop Alert
+      summary: Price has dropped on favorite product
+      payload:
+        type: object
+        required:
+          - product_id
+          - buyer_id
+          - old_price
+          - new_price
+          - currency
+          - drop_percentage
+          - alert_at
+        properties:
+          favorite_id:
+            type: string
+          product_id:
+            type: string
+          product_name:
+            type: string
+          brand:
+            type: string
+          buyer_id:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          old_price:
+            type: number
+          new_price:
+            type: number
+          currency:
+            type: string
+          drop_percentage:
+            type: number
+            description: Percentage price drop
+          savings:
+            type: number
+          alert_at:
+            type: string
+            format: date-time
+    SavedSearchMatch:
+      name: alert.saved_search_match
+      title: Saved Search Match
+      summary: New products match saved search criteria
+      payload:
+        type: object
+        required:
+          - saved_search_id
+          - buyer_id
+          - search_name
+          - new_products_count
+          - alert_at
+        properties:
+          saved_search_id:
+            type: string
+          buyer_id:
+            type: string
+          search_name:
+            type: string
+          search_query:
+            type: string
+            nullable: true
+          new_products_count:
+            type: integer
+          products:
+            type: array
+            items:
+              type: object
+              properties:
+                product_id:
+                  type: string
+                product_name:
+                  type: string
+                brand:
+                  type: string
+                starting_price:
+                  type: number
+                currency:
+                  type: string
+                vendor_count:
+                  type: integer
+          alert_at:
+            type: string
+            format: date-time
+    FavoriteProductBackInStock:
+      name: alert.product_back_in_stock
+      title: Product Back In Stock
+      summary: Previously out-of-stock favorite product is available
+      payload:
+        type: object
+        required:
+          - product_id
+          - buyer_id
+          - vendor_id
+          - stock_quantity
+          - alert_at
+        properties:
+          favorite_id:
+            type: string
+          product_id:
+            type: string
+          product_name:
+            type: string
+          buyer_id:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          stock_quantity:
+            type: integer
+          price:
+            type: number
+          currency:
+            type: string
+          alert_at:
+            type: string
+            format: date-time
+    NewReviewReceived:
+      name: review.new_received
+      title: New Review Received
+      summary: Vendor has received a new review
+      payload:
+        type: object
+        required:
+          - review_id
+          - vendor_id
+          - order_id
+          - buyer_id
+          - overall_rating
+          - created_at
+        properties:
+          review_id:
+            type: string
+          vendor_id:
+            type: string
+          order_id:
+            type: string
+          order_number:
+            type: string
+          buyer_id:
+            type: string
+          buyer_name:
+            type: string
+          is_anonymous:
+            type: boolean
+          overall_rating:
+            type: number
+            minimum: 1
+            maximum: 5
+          product_quality_rating:
+            type: number
+            nullable: true
+            minimum: 1
+            maximum: 5
+          delivery_rating:
+            type: number
+            nullable: true
+            minimum: 1
+            maximum: 5
+          communication_rating:
+            type: number
+            nullable: true
+            minimum: 1
+            maximum: 5
+          pricing_rating:
+            type: number
+            nullable: true
+            minimum: 1
+            maximum: 5
+          review_text:
+            type: string
+            nullable: true
+          photos:
+            type: array
+            items:
+              type: string
+            description: URLs of review photos
+          is_verified_purchase:
+            type: boolean
+          created_at:
+            type: string
+            format: date-time
+    VerificationApproved:
+      name: verification.approved
+      title: Verification Approved
+      summary: Vendor verification has been approved
+      payload:
+        type: object
+        required:
+          - vendor_id
+          - verified_by
+          - verified_at
+        properties:
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          verified_by:
+            type: string
+          verified_by_name:
+            type: string
+          welcome_message:
+            type: string
+            nullable: true
+          next_steps:
+            type: array
+            items:
+              type: string
+          verified_at:
+            type: string
+            format: date-time
+    VerificationRejected:
+      name: verification.rejected
+      title: Verification Rejected
+      summary: Vendor verification has been rejected
+      payload:
+        type: object
+        required:
+          - vendor_id
+          - rejected_by
+          - reason
+          - rejected_at
+        properties:
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          rejected_by:
+            type: string
+          rejected_by_name:
+            type: string
+          reason:
+            type: string
+            enum:
+              - incomplete_documentation
+              - invalid_registration
+              - suspicious_activity
+              - duplicate_vendor
+              - other
+          reason_message:
+            type: string
+          can_reapply:
+            type: boolean
+          reapply_instructions:
+            type: string
+            nullable: true
+          rejected_at:
+            type: string
+            format: date-time
+    VerificationInfoRequested:
+      name: verification.info_requested
+      title: Additional Information Requested
+      summary: Admin requests more information for verification
+      payload:
+        type: object
+        required:
+          - vendor_id
+          - requested_by
+          - requested_info
+          - requested_at
+        properties:
+          vendor_id:
+            type: string
+          requested_by:
+            type: string
+          requested_by_name:
+            type: string
+          requested_info:
+            type: string
+          specific_documents:
+            type: array
+            items:
+              type: string
+          deadline:
+            type: string
+            format: date-time
+            nullable: true
+          requested_at:
+            type: string
+            format: date-time
+    MemberRFQCreated:
+      name: organization.member_rfq_created
+      title: Member Created RFQ
+      summary: Organization member has created an RFQ
+      payload:
+        type: object
+        required:
+          - organization_id
+          - rfq_id
+          - created_by
+          - created_at
+        properties:
+          organization_id:
+            type: string
+          rfq_id:
+            type: string
+          rfq_number:
+            type: string
+          created_by:
+            type: string
+          created_by_name:
+            type: string
+          product_name:
+            type: string
+          quantity:
+            type: integer
+          vendors_count:
+            type: integer
+          created_at:
+            type: string
+            format: date-time
+    MemberOrderPlaced:
+      name: organization.member_order_placed
+      title: Member Placed Order
+      summary: Organization member has placed an order
+      payload:
+        type: object
+        required:
+          - organization_id
+          - order_id
+          - placed_by
+          - placed_at
+        properties:
+          organization_id:
+            type: string
+          order_id:
+            type: string
+          order_number:
+            type: string
+          placed_by:
+            type: string
+          placed_by_name:
+            type: string
+          vendor_name:
+            type: string
+          product_name:
+            type: string
+          quantity:
+            type: integer
+          total_amount:
+            type: number
+          currency:
+            type: string
+          placed_at:
+            type: string
+            format: date-time
+    NewMemberJoined:
+      name: organization.member_joined
+      title: New Member Joined
+      summary: New member has joined the organization
+      payload:
+        type: object
+        required:
+          - organization_id
+          - member_id
+          - member_role
+          - joined_at
+        properties:
+          organization_id:
+            type: string
+          member_id:
+            type: string
+          member_name:
+            type: string
+          member_email:
+            type: string
+          member_role:
+            type: string
+            enum:
+              - admin
+              - member
+          invited_by:
+            type: string
+            nullable: true
+          invited_by_name:
+            type: string
+            nullable: true
+          joined_at:
+            type: string
+            format: date-time
+    MemberRemoved:
+      name: organization.member_removed
+      title: Member Removed
+      summary: Member has been removed from organization
+      payload:
+        type: object
+        required:
+          - organization_id
+          - member_id
+          - removed_by
+          - removed_at
+        properties:
+          organization_id:
+            type: string
+          member_id:
+            type: string
+          member_name:
+            type: string
+          removed_by:
+            type: string
+          removed_by_name:
+            type: string
+          reason:
+            type: string
+            nullable: true
+          removed_at:
+            type: string
+            format: date-time
+    OrganizationSettingsChanged:
+      name: organization.settings_changed
+      title: Organization Settings Changed
+      summary: Organization settings have been updated
+      payload:
+        type: object
+        required:
+          - organization_id
+          - changed_by
+          - changed_fields
+          - changed_at
+        properties:
+          organization_id:
+            type: string
+          changed_by:
+            type: string
+          changed_by_name:
+            type: string
+          changed_fields:
+            type: array
+            items:
+              type: string
+          organization_name:
+            type: string
+            nullable: true
+          changed_at:
+            type: string
+            format: date-time
+    InvitationSent:
+      name: organization.invitation_sent
+      title: Invitation Sent
+      summary: Organization invitation has been sent
+      payload:
+        type: object
+        required:
+          - invitation_id
+          - organization_id
+          - email
+          - role
+          - invited_by
+          - expires_at
+          - sent_at
+        properties:
+          invitation_id:
+            type: string
+          organization_id:
+            type: string
+          organization_name:
+            type: string
+          email:
+            type: string
+          role:
+            type: string
+          invited_by:
+            type: string
+          invited_by_name:
+            type: string
+          expires_at:
+            type: string
+            format: date-time
+          sent_at:
+            type: string
+            format: date-time
+    InvitationAccepted:
+      name: organization.invitation_accepted
+      title: Invitation Accepted
+      summary: Organization invitation has been accepted
+      payload:
+        type: object
+        required:
+          - invitation_id
+          - organization_id
+          - accepted_by
+          - accepted_at
+        properties:
+          invitation_id:
+            type: string
+          organization_id:
+            type: string
+          email:
+            type: string
+          accepted_by:
+            type: string
+          accepted_by_name:
+            type: string
+          role:
+            type: string
+          accepted_at:
+            type: string
+            format: date-time
+    InvitationDeclined:
+      name: organization.invitation_declined
+      title: Invitation Declined
+      summary: Organization invitation has been declined
+      payload:
+        type: object
+        required:
+          - invitation_id
+          - organization_id
+          - email
+          - declined_at
+        properties:
+          invitation_id:
+            type: string
+          organization_id:
+            type: string
+          email:
+            type: string
+          declined_at:
+            type: string
+            format: date-time
+    InvitationExpired:
+      name: organization.invitation_expired
+      title: Invitation Expired
+      summary: Organization invitation has expired
+      payload:
+        type: object
+        required:
+          - invitation_id
+          - organization_id
+          - email
+          - expired_at
+        properties:
+          invitation_id:
+            type: string
+          organization_id:
+            type: string
+          email:
+            type: string
+          expired_at:
+            type: string
+            format: date-time
+    DisputeCreated:
+      name: dispute.created
+      title: Dispute Created
+      summary: New dispute has been created
+      payload:
+        type: object
+        required:
+          - dispute_id
+          - order_id
+          - raised_by
+          - issue_type
+          - description
+          - created_at
+        properties:
+          dispute_id:
+            type: string
+          order_id:
+            type: string
+          order_number:
+            type: string
+          raised_by:
+            type: string
+          raised_by_name:
+            type: string
+          raised_by_role:
+            type: string
+            enum:
+              - buyer
+              - vendor
+          vendor_id:
+            type: string
+          buyer_id:
+            type: string
+          issue_type:
+            type: string
+            enum:
+              - wrong_product
+              - damaged_goods
+              - incomplete_quantity
+              - quality_issues
+              - other
+          description:
+            type: string
+          preferred_resolution:
+            type: string
+            nullable: true
+          evidence_files:
+            type: array
+            items:
+              type: object
+              properties:
+                file_name:
+                  type: string
+                file_url:
+                  type: string
+                file_type:
+                  type: string
+          status:
+            type: string
+            default: open
+          created_at:
+            type: string
+            format: date-time
+    DisputeStatusChanged:
+      name: dispute.status_changed
+      title: Dispute Status Changed
+      summary: Dispute status has been updated
+      payload:
+        type: object
+        required:
+          - dispute_id
+          - order_id
+          - previous_status
+          - new_status
+          - changed_by
+          - changed_at
+        properties:
+          dispute_id:
+            type: string
+          order_id:
+            type: string
+          previous_status:
+            type: string
+          new_status:
+            type: string
+            enum:
+              - open
+              - investigating
+              - resolved
+              - closed
+          changed_by:
+            type: string
+          changed_by_name:
+            type: string
+          changed_by_role:
+            type: string
+          notes:
+            type: string
+            nullable: true
+          changed_at:
+            type: string
+            format: date-time
+    DisputeMessageReceived:
+      name: dispute.message_received
+      title: Dispute Message Received
+      summary: New message in dispute thread
+      payload:
+        type: object
+        required:
+          - dispute_id
+          - message_id
+          - sender_id
+          - message_text
+          - created_at
+        properties:
+          dispute_id:
+            type: string
+          message_id:
+            type: string
+          sender_id:
+            type: string
+          sender_name:
+            type: string
+          sender_role:
+            type: string
+            enum:
+              - buyer
+              - vendor
+              - admin
+          recipient_ids:
+            type: array
+            items:
+              type: string
+          message_text:
+            type: string
+          created_at:
+            type: string
+            format: date-time
+    DisputeResolved:
+      name: dispute.resolved
+      title: Dispute Resolved
+      summary: Dispute has been resolved
+      payload:
+        type: object
+        required:
+          - dispute_id
+          - order_id
+          - resolution_decision
+          - resolved_by
+          - resolved_at
+        properties:
+          dispute_id:
+            type: string
+          order_id:
+            type: string
+          resolution_decision:
+            type: string
+            enum:
+              - favor_buyer
+              - favor_vendor
+              - partial_resolution
+              - no_fault
+          resolution_notes:
+            type: string
+          resolution_action:
+            type: string
+            nullable: true
+            description: Action taken (refund, replacement, etc.)
+          refund_amount:
+            type: number
+            nullable: true
+          resolved_by:
+            type: string
+          resolved_by_name:
+            type: string
+          resolved_at:
+            type: string
+            format: date-time
+    DisputeEvidenceUploaded:
+      name: dispute.evidence_uploaded
+      title: Evidence Uploaded
+      summary: New evidence has been uploaded to dispute
+      payload:
+        type: object
+        required:
+          - dispute_id
+          - evidence_id
+          - uploaded_by
+          - uploaded_at
+        properties:
+          dispute_id:
+            type: string
+          evidence_id:
+            type: string
+          uploaded_by:
+            type: string
+          uploaded_by_name:
+            type: string
+          uploaded_by_role:
+            type: string
+          file_name:
+            type: string
+          file_url:
+            type: string
+          file_type:
+            type: string
+          uploaded_at:
+            type: string
+            format: date-time
+    NewVendorPendingVerification:
+      name: admin.vendor_pending_verification
+      title: New Vendor Pending Verification
+      summary: New vendor registration requires verification
+      payload:
+        type: object
+        required:
+          - vendor_id
+          - business_name
+          - registration_date
+        properties:
+          vendor_id:
+            type: string
+          business_name:
+            type: string
+          email:
+            type: string
+          business_type:
+            type: string
+            nullable: true
+          city:
+            type: string
+            nullable: true
+          documents_submitted_count:
+            type: integer
+          registration_date:
+            type: string
+            format: date-time
+    VendorDocumentUploaded:
+      name: admin.vendor_document_uploaded
+      title: Vendor Document Uploaded
+      summary: Vendor has uploaded a verification document
+      payload:
+        type: object
+        required:
+          - vendor_id
+          - document_id
+          - document_type
+          - uploaded_at
+        properties:
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          document_id:
+            type: string
+          document_type:
+            type: string
+          file_name:
+            type: string
+          file_url:
+            type: string
+          uploaded_at:
+            type: string
+            format: date-time
+    NewDisputeCreated:
+      name: admin.dispute_created
+      title: New Dispute Created
+      summary: New dispute requires admin attention
+      payload:
+        type: object
+        required:
+          - dispute_id
+          - order_id
+          - issue_type
+          - raised_by_role
+          - created_at
+        properties:
+          dispute_id:
+            type: string
+          order_id:
+            type: string
+          order_number:
+            type: string
+          buyer_id:
+            type: string
+          buyer_name:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          issue_type:
+            type: string
+          raised_by:
+            type: string
+          raised_by_role:
+            type: string
+          description_preview:
+            type: string
+          created_at:
+            type: string
+            format: date-time
+    DisputeEscalated:
+      name: admin.dispute_escalated
+      title: Dispute Escalated
+      summary: Dispute has been escalated for senior review
+      payload:
+        type: object
+        required:
+          - dispute_id
+          - escalated_by
+          - escalation_reason
+          - escalated_at
+        properties:
+          dispute_id:
+            type: string
+          order_id:
+            type: string
+          escalated_by:
+            type: string
+          escalated_by_name:
+            type: string
+          escalation_reason:
+            type: string
+          priority:
+            type: string
+            enum:
+              - low
+              - medium
+              - high
+              - urgent
+          escalated_at:
+            type: string
+            format: date-time
+    SystemErrorAlert:
+      name: admin.system_error
+      title: System Error Alert
+      summary: Critical system error detected
+      payload:
+        type: object
+        required:
+          - error_type
+          - error_message
+          - severity
+          - occurred_at
+        properties:
+          error_id:
+            type: string
+          error_type:
+            type: string
+          error_message:
+            type: string
+          stack_trace:
+            type: string
+            nullable: true
+          affected_component:
+            type: string
+            nullable: true
+          severity:
+            type: string
+            enum:
+              - low
+              - medium
+              - high
+              - critical
+          user_impact:
+            type: string
+            nullable: true
+          occurred_at:
+            type: string
+            format: date-time
+    HighErrorRateAlert:
+      name: admin.high_error_rate
+      title: High Error Rate Alert
+      summary: Error rate has exceeded threshold
+      payload:
+        type: object
+        required:
+          - error_rate
+          - threshold
+          - time_window
+          - alert_at
+        properties:
+          error_rate:
+            type: number
+            description: Percentage of requests with errors
+          threshold:
+            type: number
+          time_window:
+            type: string
+            description: Time window for measurement (e.g., '1 hour')
+          affected_endpoints:
+            type: array
+            items:
+              type: string
+          alert_at:
+            type: string
+            format: date-time
+    FailedImportAlert:
+      name: admin.failed_import
+      title: Failed Import Alert
+      summary: CSV import has failed
+      payload:
+        type: object
+        required:
+          - import_id
+          - vendor_id
+          - failed_rows_count
+          - failed_at
+        properties:
+          import_id:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          file_name:
+            type: string
+          total_rows:
+            type: integer
+          failed_rows_count:
+            type: integer
+          error_summary:
+            type: string
+          failed_at:
+            type: string
+            format: date-time
+    NewOfferAdded:
+      name: product.offer_added
+      title: New Offer Added
+      summary: New vendor offer added for product
+      payload:
+        type: object
+        required:
+          - offer_id
+          - product_id
+          - vendor_id
+          - price
+          - currency
+          - added_at
+        properties:
+          offer_id:
+            type: string
+          product_id:
+            type: string
+          product_name:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          price:
+            type: number
+          currency:
+            type: string
+          stock_quantity:
+            type: integer
+          min_order_quantity:
+            type: integer
+          added_at:
+            type: string
+            format: date-time
+    OfferPriceChanged:
+      name: product.offer_price_changed
+      title: Offer Price Changed
+      summary: Vendor has changed offer price
+      payload:
+        type: object
+        required:
+          - offer_id
+          - product_id
+          - vendor_id
+          - old_price
+          - new_price
+          - currency
+          - changed_at
+        properties:
+          offer_id:
+            type: string
+          product_id:
+            type: string
+          product_name:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          old_price:
+            type: number
+          new_price:
+            type: number
+          currency:
+            type: string
+          price_change_percentage:
+            type: number
+          changed_at:
+            type: string
+            format: date-time
+    OfferStockChanged:
+      name: product.offer_stock_changed
+      title: Offer Stock Changed
+      summary: Vendor has updated stock quantity
+      payload:
+        type: object
+        required:
+          - offer_id
+          - product_id
+          - vendor_id
+          - old_stock
+          - new_stock
+          - changed_at
+        properties:
+          offer_id:
+            type: string
+          product_id:
+            type: string
+          vendor_id:
+            type: string
+          old_stock:
+            type: integer
+          new_stock:
+            type: integer
+          status:
+            type: string
+            enum:
+              - in_stock
+              - limited_stock
+              - out_of_stock
+          changed_at:
+            type: string
+            format: date-time
+    OfferRemoved:
+      name: product.offer_removed
+      title: Offer Removed
+      summary: Vendor offer has been removed
+      payload:
+        type: object
+        required:
+          - offer_id
+          - product_id
+          - vendor_id
+          - removed_at
+        properties:
+          offer_id:
+            type: string
+          product_id:
+            type: string
+          product_name:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          reason:
+            type: string
+            nullable: true
+          removed_at:
+            type: string
+            format: date-time
+    ComparisonOfferAdded:
+      name: comparison.offer_added
+      title: Comparison Offer Added
+      summary: Offer added to comparison session
+      payload:
+        type: object
+        required:
+          - session_id
+          - offer_id
+          - product_id
+          - added_at
+        properties:
+          session_id:
+            type: string
+          offer_id:
+            type: string
+          product_id:
+            type: string
+          vendor_id:
+            type: string
+          vendor_name:
+            type: string
+          price:
+            type: number
+          currency:
+            type: string
+          added_by:
+            type: string
+            nullable: true
+          added_at:
+            type: string
+            format: date-time
+    ComparisonOfferRemoved:
+      name: comparison.offer_removed
+      title: Comparison Offer Removed
+      summary: Offer removed from comparison session
+      payload:
+        type: object
+        required:
+          - session_id
+          - offer_id
+          - removed_at
+        properties:
+          session_id:
+            type: string
+          offer_id:
+            type: string
+          removed_by:
+            type: string
+            nullable: true
+          removed_at:
+            type: string
+            format: date-time
+    ComparisonShared:
+      name: comparison.shared
+      title: Comparison Shared
+      summary: Comparison has been shared with others
+      payload:
+        type: object
+        required:
+          - comparison_id
+          - shared_by
+          - share_token
+          - expires_at
+          - shared_at
+        properties:
+          comparison_id:
+            type: string
+          shared_by:
+            type: string
+          share_token:
+            type: string
+          share_url:
+            type: string
+          product_id:
+            type: string
+          offers_count:
+            type: integer
+          expires_at:
+            type: string
+            format: date-time
+          shared_at:
+            type: string
+            format: date-time
+    SessionExpiring:
+      name: session.expiring
+      title: Session Expiring Soon
+      summary: User session will expire soon
+      payload:
+        type: object
+        required:
+          - session_id
+          - user_id
+          - expires_at
+          - minutes_remaining
+        properties:
+          session_id:
+            type: string
+          user_id:
+            type: string
+          expires_at:
+            type: string
+            format: date-time
+          minutes_remaining:
+            type: integer
+    SessionTerminated:
+      name: session.terminated
+      title: Session Terminated
+      summary: User session has been terminated
+      payload:
+        type: object
+        required:
+          - session_id
+          - user_id
+          - reason
+          - terminated_at
+        properties:
+          session_id:
+            type: string
+          user_id:
+            type: string
+          reason:
+            type: string
+            enum:
+              - expired
+              - logout
+              - revoked
+              - device_removed
+              - security_alert
+          terminated_at:
+            type: string
+            format: date-time
+    ForceLogout:
+      name: session.force_logout
+      title: Force Logout
+      summary: User is being forcefully logged out
+      payload:
+        type: object
+        required:
+          - user_id
+          - reason
+          - logout_at
+        properties:
+          user_id:
+            type: string
+          reason:
+            type: string
+            enum:
+              - account_suspended
+              - security_breach
+              - admin_action
+              - password_reset
+          message:
+            type: string
+            nullable: true
+          logout_at:
+            type: string
+            format: date-time
+    NegotiationRoundStarted:
+      name: negotiation.round_started
+      title: Negotiation Round Started
+      summary: New negotiation round has begun
+      payload:
+        type: object
+        required:
+          - negotiation_id
+          - rfq_id
+          - quote_id
+          - round_number
+          - started_at
+        properties:
+          negotiation_id:
+            type: string
+          rfq_id:
+            type: string
+          quote_id:
+            type: string
+          round_number:
+            type: integer
+          initiated_by:
+            type: string
+          initiated_by_role:
+            type: string
+            enum:
+              - buyer
+              - vendor
+          started_at:
+            type: string
+            format: date-time
+    NegotiationRoundCompleted:
+      name: negotiation.round_completed
+      title: Negotiation Round Completed
+      summary: Negotiation round has been completed
+      payload:
+        type: object
+        required:
+          - negotiation_id
+          - rfq_id
+          - round_number
+          - outcome
+          - completed_at
+        properties:
+          negotiation_id:
+            type: string
+          rfq_id:
+            type: string
+          quote_id:
+            type: string
+          round_number:
+            type: integer
+          outcome:
+            type: string
+            enum:
+              - accepted
+              - counter_proposed
+              - declined
+          completed_at:
+            type: string
+            format: date-time
+    NegotiationLimitReached:
+      name: negotiation.limit_reached
+      title: Negotiation Limit Reached
+      summary: Maximum negotiation rounds reached
+      payload:
+        type: object
+        required:
+          - negotiation_id
+          - rfq_id
+          - max_rounds
+          - reached_at
+        properties:
+          negotiation_id:
+            type: string
+          rfq_id:
+            type: string
+          quote_id:
+            type: string
+          max_rounds:
+            type: integer
+          current_status:
+            type: string
+          message:
+            type: string
+          reached_at:
+            type: string
+            format: date-time
+    SendRFQMessage:
+      name: rfq.send_message
+      title: Send RFQ Message
+      summary: Send a message in RFQ thread
+      payload:
+        type: object
+        required:
+          - rfq_id
+          - sender_id
+          - message_text
+        properties:
+          rfq_id:
+            type: string
+          vendor_id:
+            type: string
+            nullable: true
+            description: Specific vendor in thread (null for broadcast to all)
+          sender_id:
+            type: string
+          message_text:
+            type: string
+            minLength: 1
+            maxLength: 2000
+          attachments:
+            type: array
+            items:
+              type: object
+              required:
+                - file_name
+                - file_url
+              properties:
+                file_name:
+                  type: string
+                file_url:
+                  type: string
+                file_size:
+                  type: integer
+                  nullable: true
+    RFQMessageSent:
+      name: rfq.message_sent
+      title: RFQ Message Sent
+      summary: Message sent in RFQ thread
+      payload:
+        $ref: "#/components/schemas/RFQMessage"
+    SendOrderMessage:
+      name: order.send_message
+      title: Send Order Message
+      summary: Send a message in order thread
+      payload:
+        type: object
+        required:
+          - order_id
+          - sender_id
+          - message_text
+        properties:
+          order_id:
+            type: string
+          sender_id:
+            type: string
+          message_text:
+            type: string
+            minLength: 1
+            maxLength: 2000
+          attachments:
+            type: array
+            items:
+              type: object
+              required:
+                - file_name
+                - file_url
+              properties:
+                file_name:
+                  type: string
+                file_url:
+                  type: string
+                file_size:
+                  type: integer
+                  nullable: true
+    OrderMessageSent:
+      name: order.message_sent
+      title: Order Message Sent
+      summary: Message sent in order thread
+      payload:
+        $ref: "#/components/schemas/OrderMessage"
+    DriverLocationUpdate:
+      name: tracking.driver_location
+      title: Driver Location Update
+      summary: Real-time driver location update
+      payload:
+        type: object
+        required:
+          - order_id
+          - latitude
+          - longitude
+          - timestamp
+        properties:
+          order_id:
+            type: string
+          order_number:
+            type: string
+          driver_name:
+            type: string
+          latitude:
+            type: number
+          longitude:
+            type: number
+          speed:
+            type: number
+            nullable: true
+            description: Speed in km/h
+          heading:
+            type: number
+            nullable: true
+            description: Direction in degrees (0-360)
+          address:
+            type: string
+            nullable: true
+            description: Reverse geocoded address
+          timestamp:
+            type: string
+            format: date-time
+    EstimatedArrivalUpdate:
+      name: tracking.eta_update
+      title: Estimated Arrival Update
+      summary: Updated estimated arrival time
+      payload:
+        type: object
+        required:
+          - order_id
+          - new_eta
+          - updated_at
+        properties:
+          order_id:
+            type: string
+          order_number:
+            type: string
+          previous_eta:
+            type: string
+            format: date-time
+            nullable: true
+          new_eta:
+            type: string
+            format: date-time
+          difference_minutes:
+            type: integer
+            description: Positive if delayed, negative if earlier
+          reason:
+            type: string
+            nullable: true
+          updated_at:
+            type: string
+            format: date-time
+    DeliveryDelayed:
+      name: tracking.delivery_delayed
+      title: Delivery Delayed
+      summary: Delivery has been delayed
+      payload:
+        type: object
+        required:
+          - order_id
+          - delay_minutes
+          - new_eta
+          - reason
+          - notified_at
+        properties:
+          order_id:
+            type: string
+          order_number:
+            type: string
+          original_eta:
+            type: string
+            format: date-time
+          new_eta:
+            type: string
+            format: date-time
+          delay_minutes:
+            type: integer
+          reason:
+            type: string
+          detailed_reason:
+            type: string
+            nullable: true
+          notified_at:
+            type: string
+            format: date-time
+  schemas:
+    RFQMessage:
+      type: object
+      required:
+        - message_id
+        - rfq_id
+        - sender_id
+        - message_text
+        - created_at
+      properties:
+        message_id:
+          type: string
+        rfq_id:
+          type: string
+        vendor_id:
+          type: string
+          nullable: true
+          description: Specific vendor in thread (null if message to all vendors)
+        sender_id:
+          type: string
+        sender_name:
+          type: string
+        sender_role:
+          type: string
+          enum:
+            - buyer
+            - vendor
+        message_text:
+          type: string
+        attachments:
+          type: array
+          items:
+            type: object
+            required:
+              - file_name
+              - file_url
+            properties:
+              file_name:
+                type: string
+              file_url:
+                type: string
+              file_size:
+                type: integer
+                nullable: true
+        is_read:
+          type: boolean
+          default: false
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    OrderMessage:
+      type: object
+      required:
+        - message_id
+        - order_id
+        - sender_id
+        - message_text
+        - created_at
+      properties:
+        message_id:
+          type: string
+        order_id:
+          type: string
+        sender_id:
+          type: string
+        sender_name:
+          type: string
+        sender_role:
+          type: string
+          enum:
+            - buyer
+            - vendor
+        message_text:
+          type: string
+        attachments:
+          type: array
+          items:
+            type: object
+            required:
+              - file_name
+              - file_url
+            properties:
+              file_name:
+                type: string
+              file_url:
+                type: string
+              file_size:
+                type: integer
+                nullable: true
+        is_read:
+          type: boolean
+          default: false
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time

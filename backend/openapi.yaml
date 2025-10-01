@@ -1,0 +1,4809 @@
+openapi: 3.0.0
+info:
+  title: BuildBuy API
+  description: B2B Construction Materials Marketplace API
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        user_id:
+          type: string
+        email:
+          type: string
+        full_name:
+          type: string
+        phone_number:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum:
+            - admin
+            - buyer
+            - vendor
+        organization_id:
+          type: string
+          nullable: true
+        organization_role:
+          type: string
+          nullable: true
+        verification_status:
+          type: string
+          nullable: true
+        primary_address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        profile_photo_url:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    Organization:
+      type: object
+      properties:
+        organization_id:
+          type: string
+        organization_name:
+          type: string
+        industry:
+          type: string
+          nullable: true
+        primary_address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        logo_url:
+          type: string
+          nullable: true
+        website:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    Category:
+      type: object
+      properties:
+        category_id:
+          type: string
+        category_name:
+          type: string
+        parent_category_id:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        icon_url:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        sort_order:
+          type: number
+          nullable: true
+    Brand:
+      type: object
+      properties:
+        brand_id:
+          type: string
+        brand_name:
+          type: string
+        logo_url:
+          type: string
+          nullable: true
+        website:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+    CanonicalProduct:
+      type: object
+      properties:
+        product_id:
+          type: string
+        product_name:
+          type: string
+        brand_id:
+          type: string
+        model:
+          type: string
+        category_id:
+          type: string
+        subcategory_id:
+          type: string
+          nullable: true
+        unit_type_id:
+          type: string
+        specifications:
+          type: object
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+            - discontinued
+        created_at:
+          type: string
+          format: date-time
+    VendorProfile:
+      type: object
+      properties:
+        vendor_id:
+          type: string
+        business_name:
+          type: string
+        business_type:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        logo_url:
+          type: string
+          nullable: true
+        website:
+          type: string
+          nullable: true
+        average_rating:
+          type: number
+          nullable: true
+        total_reviews:
+          type: number
+        total_orders:
+          type: number
+        response_time_hours:
+          type: number
+          nullable: true
+        fulfillment_rate:
+          type: number
+          nullable: true
+    VendorOffer:
+      type: object
+      properties:
+        offer_id:
+          type: string
+        vendor_id:
+          type: string
+        product_id:
+          type: string
+        price:
+          type: number
+        currency:
+          type: string
+        stock_quantity:
+          type: number
+        min_order_quantity:
+          type: number
+        max_order_quantity:
+          type: number
+          nullable: true
+        lead_time_days:
+          type: number
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+            - out_of_stock
+        updated_at:
+          type: string
+          format: date-time
+    RFQ:
+      type: object
+      properties:
+        rfq_id:
+          type: string
+        rfq_number:
+          type: string
+        buyer_id:
+          type: string
+        organization_id:
+          type: string
+          nullable: true
+        product_id:
+          type: string
+        quantity:
+          type: number
+        delivery_address_id:
+          type: string
+        preferred_delivery_date:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+            - draft
+            - active
+            - closed
+            - cancelled
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    Quote:
+      type: object
+      properties:
+        quote_id:
+          type: string
+        rfq_id:
+          type: string
+        vendor_id:
+          type: string
+        price_per_unit:
+          type: number
+        currency:
+          type: string
+        quantity_available:
+          type: number
+        delivery_fee:
+          type: number
+          nullable: true
+        lead_time_days:
+          type: number
+        payment_terms:
+          type: string
+        valid_until:
+          type: string
+          format: date-time
+        notes:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+            - submitted
+            - accepted
+            - declined
+            - expired
+        created_at:
+          type: string
+          format: date-time
+    Order:
+      type: object
+      properties:
+        order_id:
+          type: string
+        order_number:
+          type: string
+        buyer_id:
+          type: string
+        vendor_id:
+          type: string
+        product_id:
+          type: string
+        quantity:
+          type: number
+        unit_price:
+          type: number
+        currency:
+          type: string
+        total_amount:
+          type: number
+        delivery_address_id:
+          type: string
+        expected_delivery_date:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          enum:
+            - pending_vendor_confirmation
+            - confirmed
+            - preparing
+            - dispatched
+            - in_transit
+            - delivered
+            - cancelled
+            - vendor_declined
+        payment_method:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    Review:
+      type: object
+      properties:
+        review_id:
+          type: string
+        order_id:
+          type: string
+        vendor_id:
+          type: string
+        overall_rating:
+          type: number
+        product_quality_rating:
+          type: number
+          nullable: true
+        delivery_rating:
+          type: number
+          nullable: true
+        communication_rating:
+          type: number
+          nullable: true
+        pricing_rating:
+          type: number
+          nullable: true
+        review_text:
+          type: string
+          nullable: true
+        is_anonymous:
+          type: boolean
+        vendor_response:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    Notification:
+      type: object
+      properties:
+        notification_id:
+          type: string
+        notification_type:
+          type: string
+        category:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        link_url:
+          type: string
+          nullable: true
+        is_read:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    Dispute:
+      type: object
+      properties:
+        dispute_id:
+          type: string
+        order_id:
+          type: string
+        raised_by:
+          type: string
+        issue_type:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+            - open
+            - investigating
+            - resolved
+            - closed
+        resolution_notes:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    DeliveryAddress:
+      type: object
+      properties:
+        address_id:
+          type: string
+        address_label:
+          type: string
+        contact_person_name:
+          type: string
+        contact_phone:
+          type: string
+        address_line_1:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postal_code:
+          type: string
+        is_default:
+          type: boolean
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+paths:
+  /auth/register/buyer:
+    post:
+      summary: Register new buyer account
+      operationId: registerBuyer
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - full_name
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                full_name:
+                  type: string
+                phone_number:
+                  type: string
+                primary_address:
+                  type: string
+                city:
+                  type: string
+      responses:
+        "201":
+          description: Buyer registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "#/components/schemas/User"
+                  auth_token:
+                    type: string
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /auth/register/vendor:
+    post:
+      summary: Register new vendor account
+      operationId: registerVendor
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - full_name
+                - business_name
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                full_name:
+                  type: string
+                phone_number:
+                  type: string
+                business_name:
+                  type: string
+                business_type:
+                  type: string
+                business_registration_number:
+                  type: string
+                tax_id:
+                  type: string
+                business_address:
+                  type: string
+                city:
+                  type: string
+      responses:
+        "201":
+          description: Vendor registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "#/components/schemas/User"
+                  auth_token:
+                    type: string
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /auth/login:
+    post:
+      summary: Send magic link for passwordless login
+      operationId: sendMagicLink
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+      responses:
+        "200":
+          description: Magic link sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /auth/verify-magic-link:
+    post:
+      summary: Verify magic link token and authenticate user
+      operationId: verifyMagicLink
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+      responses:
+        "200":
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "#/components/schemas/User"
+                  auth_token:
+                    type: string
+        "400":
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /auth/me:
+    get:
+      summary: Get current authenticated user
+      operationId: getCurrentUser
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Current user details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /auth/logout:
+    post:
+      summary: Logout current session
+      operationId: logout
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /auth/sessions:
+    get:
+      summary: Get all active sessions for current user
+      operationId: getUserSessions
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of active sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    session_id:
+                      type: string
+                    device_name:
+                      type: string
+                    browser:
+                      type: string
+                    ip_address:
+                      type: string
+                    last_active_at:
+                      type: string
+                      format: date-time
+  /auth/sessions/{session_id}:
+    delete:
+      summary: Revoke specific session
+      operationId: revokeSession
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Session revoked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /users/{user_id}:
+    get:
+      summary: Get user by ID
+      operationId: getUserById
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      summary: Update user profile
+      operationId: updateUser
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name:
+                  type: string
+                phone_number:
+                  type: string
+                primary_address:
+                  type: string
+                city:
+                  type: string
+                profile_photo_url:
+                  type: string
+      responses:
+        "200":
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    delete:
+      summary: Delete user account
+      operationId: deleteUser
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /organizations:
+    post:
+      summary: Create new organization
+      operationId: createOrganization
+      tags:
+        - Organizations
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - organization_name
+              properties:
+                organization_name:
+                  type: string
+                industry:
+                  type: string
+                primary_address:
+                  type: string
+                city:
+                  type: string
+                logo_url:
+                  type: string
+                website:
+                  type: string
+      responses:
+        "201":
+          description: Organization created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+  /organizations/{organization_id}:
+    get:
+      summary: Get organization details
+      operationId: getOrganization
+      tags:
+        - Organizations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Organization details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+    patch:
+      summary: Update organization details
+      operationId: updateOrganization
+      tags:
+        - Organizations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                organization_name:
+                  type: string
+                industry:
+                  type: string
+                primary_address:
+                  type: string
+                logo_url:
+                  type: string
+      responses:
+        "200":
+          description: Organization updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+  /organizations/{organization_id}/members:
+    get:
+      summary: Get organization members
+      operationId: getOrganizationMembers
+      tags:
+        - Organizations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of organization members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+  /organizations/{organization_id}/invitations:
+    post:
+      summary: Invite user to organization
+      operationId: inviteToOrganization
+      tags:
+        - Organizations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - role
+              properties:
+                email:
+                  type: string
+                role:
+                  type: string
+                  enum:
+                    - admin
+                    - member
+      responses:
+        "201":
+          description: Invitation sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invitation_id:
+                    type: string
+                  email:
+                    type: string
+                  status:
+                    type: string
+    get:
+      summary: Get organization invitations
+      operationId: getOrganizationInvitations
+      tags:
+        - Organizations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of invitations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    invitation_id:
+                      type: string
+                    email:
+                      type: string
+                    role:
+                      type: string
+                    status:
+                      type: string
+                    created_at:
+                      type: string
+                      format: date-time
+  /organizations/invitations/{invitation_id}/accept:
+    post:
+      summary: Accept organization invitation
+      operationId: acceptOrganizationInvitation
+      tags:
+        - Organizations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: invitation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Invitation accepted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  organization:
+                    $ref: "#/components/schemas/Organization"
+  /organizations/{organization_id}/members/{user_id}:
+    delete:
+      summary: Remove member from organization
+      operationId: removeOrganizationMember
+      tags:
+        - Organizations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Member removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /organizations/{organization_id}/addresses:
+    get:
+      summary: Get organization addresses
+      operationId: getOrganizationAddresses
+      tags:
+        - Organizations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of organization addresses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeliveryAddress"
+    post:
+      summary: Add organization address
+      operationId: addOrganizationAddress
+      tags:
+        - Organizations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - address_label
+                - contact_person_name
+                - contact_phone
+                - address_line_1
+                - city
+                - state
+                - postal_code
+              properties:
+                address_label:
+                  type: string
+                contact_person_name:
+                  type: string
+                contact_phone:
+                  type: string
+                address_line_1:
+                  type: string
+                city:
+                  type: string
+                state:
+                  type: string
+                postal_code:
+                  type: string
+      responses:
+        "201":
+          description: Address added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryAddress"
+  /categories:
+    get:
+      summary: Get all categories
+      operationId: getCategories
+      tags:
+        - Categories
+      parameters:
+        - name: parent_category_id
+          in: query
+          schema:
+            type: string
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+    post:
+      summary: Create new category
+      operationId: createCategory
+      tags:
+        - Categories
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - category_name
+              properties:
+                category_name:
+                  type: string
+                parent_category_id:
+                  type: string
+                description:
+                  type: string
+                icon_url:
+                  type: string
+      responses:
+        "201":
+          description: Category created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+  /categories/{category_id}:
+    get:
+      summary: Get category by ID
+      operationId: getCategoryById
+      tags:
+        - Categories
+      parameters:
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Category details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+    patch:
+      summary: Update category
+      operationId: updateCategory
+      tags:
+        - Categories
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                category_name:
+                  type: string
+                description:
+                  type: string
+                is_active:
+                  type: boolean
+      responses:
+        "200":
+          description: Category updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+    delete:
+      summary: Delete category
+      operationId: deleteCategory
+      tags:
+        - Categories
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: category_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Category deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /brands:
+    get:
+      summary: Get all brands
+      operationId: getBrands
+      tags:
+        - Brands
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of brands
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Brand"
+    post:
+      summary: Create new brand
+      operationId: createBrand
+      tags:
+        - Brands
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - brand_name
+              properties:
+                brand_name:
+                  type: string
+                logo_url:
+                  type: string
+                website:
+                  type: string
+      responses:
+        "201":
+          description: Brand created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Brand"
+  /brands/{brand_id}:
+    get:
+      summary: Get brand by ID
+      operationId: getBrandById
+      tags:
+        - Brands
+      parameters:
+        - name: brand_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Brand details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Brand"
+    patch:
+      summary: Update brand
+      operationId: updateBrand
+      tags:
+        - Brands
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: brand_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                brand_name:
+                  type: string
+                logo_url:
+                  type: string
+      responses:
+        "200":
+          description: Brand updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Brand"
+  /products:
+    get:
+      summary: Search and filter products
+      operationId: searchProducts
+      tags:
+        - Products
+      parameters:
+        - name: q
+          in: query
+          description: Search query
+          schema:
+            type: string
+        - name: category_id
+          in: query
+          description: Filter by category
+          schema:
+            type: string
+        - name: brand_id
+          in: query
+          description: Filter by brand
+          schema:
+            type: string
+        - name: price_min
+          in: query
+          description: Minimum price filter
+          schema:
+            type: number
+        - name: price_max
+          in: query
+          description: Maximum price filter
+          schema:
+            type: number
+        - name: city_id
+          in: query
+          description: Filter by delivery city
+          schema:
+            type: string
+        - name: delivery_available
+          in: query
+          description: Filter by delivery availability
+          schema:
+            type: boolean
+        - name: stock_status
+          in: query
+          description: Filter by stock status
+          schema:
+            type: string
+        - name: unit_type
+          in: query
+          description: Filter by unit type
+          schema:
+            type: string
+        - name: sort_by
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum:
+              - relevance
+              - price_asc
+              - price_desc
+              - rating_desc
+              - proximity
+              - recently_updated
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 24
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CanonicalProduct"
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+    post:
+      summary: Create canonical product
+      operationId: createProduct
+      tags:
+        - Products
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - product_name
+                - brand_id
+                - model
+                - category_id
+                - unit_type_id
+              properties:
+                product_name:
+                  type: string
+                brand_id:
+                  type: string
+                model:
+                  type: string
+                category_id:
+                  type: string
+                subcategory_id:
+                  type: string
+                unit_type_id:
+                  type: string
+                specifications:
+                  type: object
+                description:
+                  type: string
+      responses:
+        "201":
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CanonicalProduct"
+  /products/{product_id}:
+    get:
+      summary: Get product details with vendor offers
+      operationId: getProductById
+      tags:
+        - Products
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: city_id
+          in: query
+          description: City for delivery availability
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product details with offers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  product:
+                    $ref: "#/components/schemas/CanonicalProduct"
+                  vendor_offers:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/VendorOffer"
+    patch:
+      summary: Update canonical product
+      operationId: updateProduct
+      tags:
+        - Products
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product_name:
+                  type: string
+                specifications:
+                  type: object
+                description:
+                  type: string
+                status:
+                  type: string
+      responses:
+        "200":
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CanonicalProduct"
+    delete:
+      summary: Delete canonical product
+      operationId: deleteProduct
+      tags:
+        - Products
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /products/{product_id}/images:
+    post:
+      summary: Add product image
+      operationId: addProductImage
+      tags:
+        - Products
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - image_url
+              properties:
+                image_url:
+                  type: string
+                is_primary:
+                  type: boolean
+      responses:
+        "201":
+          description: Image added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  image_id:
+                    type: string
+                  image_url:
+                    type: string
+  /products/images/{image_id}:
+    delete:
+      summary: Delete product image
+      operationId: deleteProductImage
+      tags:
+        - Products
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: image_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Image deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /products/duplicates:
+    get:
+      summary: Find duplicate products
+      operationId: findDuplicateProducts
+      tags:
+        - Products
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: category_id
+          in: query
+          schema:
+            type: string
+        - name: min_similarity
+          in: query
+          schema:
+            type: number
+            default: 80
+      responses:
+        "200":
+          description: Duplicate candidates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    primary_product:
+                      $ref: "#/components/schemas/CanonicalProduct"
+                    duplicates:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          product:
+                            $ref: "#/components/schemas/CanonicalProduct"
+                          similarity_score:
+                            type: number
+  /products/merge:
+    post:
+      summary: Merge duplicate products
+      operationId: mergeProducts
+      tags:
+        - Products
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - primary_product_id
+                - duplicate_product_ids
+              properties:
+                primary_product_id:
+                  type: string
+                duplicate_product_ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Products merged successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  merge_id:
+                    type: string
+  /vendors/{vendor_id}:
+    get:
+      summary: Get vendor public profile
+      operationId: getVendorProfile
+      tags:
+        - Vendors
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Vendor profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorProfile"
+    patch:
+      summary: Update vendor profile
+      operationId: updateVendorProfile
+      tags:
+        - Vendors
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                business_name:
+                  type: string
+                description:
+                  type: string
+                logo_url:
+                  type: string
+                website:
+                  type: string
+                operating_hours:
+                  type: object
+      responses:
+        "200":
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorProfile"
+  /vendors/{vendor_id}/reviews:
+    get:
+      summary: Get vendor reviews
+      operationId: getVendorReviews
+      tags:
+        - Vendors
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum:
+              - most_recent
+              - highest_rated
+              - lowest_rated
+              - most_helpful
+        - name: min_rating
+          in: query
+          schema:
+            type: number
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reviews:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Review"
+                  total:
+                    type: integer
+  /vendors/{vendor_id}/documents:
+    post:
+      summary: Upload vendor verification document
+      operationId: uploadVendorDocument
+      tags:
+        - Vendors
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - document_type
+                - file_url
+                - file_name
+              properties:
+                document_type:
+                  type: string
+                file_url:
+                  type: string
+                file_name:
+                  type: string
+      responses:
+        "201":
+          description: Document uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  document_id:
+                    type: string
+  /vendors/{vendor_id}/service-areas:
+    get:
+      summary: Get vendor service areas
+      operationId: getVendorServiceAreas
+      tags:
+        - Vendors
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of service areas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    service_area_id:
+                      type: string
+                    city_name:
+                      type: string
+                    delivery_fee:
+                      type: number
+                    estimated_delivery_days:
+                      type: number
+    post:
+      summary: Add vendor service area
+      operationId: addVendorServiceArea
+      tags:
+        - Vendors
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - city_id
+                - city_name
+                - state
+              properties:
+                city_id:
+                  type: string
+                city_name:
+                  type: string
+                state:
+                  type: string
+                delivery_fee:
+                  type: number
+                estimated_delivery_days:
+                  type: number
+      responses:
+        "201":
+          description: Service area added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service_area_id:
+                    type: string
+  /vendors/{vendor_id}/offers:
+    get:
+      summary: Get vendor offers
+      operationId: getVendorOffers
+      tags:
+        - Vendor Offers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum:
+              - active
+              - inactive
+              - out_of_stock
+        - name: category_id
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of vendor offers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  offers:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/VendorOffer"
+                  total:
+                    type: integer
+    post:
+      summary: Create vendor offer
+      operationId: createVendorOffer
+      tags:
+        - Vendor Offers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - product_id
+                - price
+                - currency
+                - stock_quantity
+                - min_order_quantity
+                - lead_time_days
+              properties:
+                product_id:
+                  type: string
+                vendor_sku:
+                  type: string
+                price:
+                  type: number
+                currency:
+                  type: string
+                stock_quantity:
+                  type: number
+                min_order_quantity:
+                  type: number
+                max_order_quantity:
+                  type: number
+                lead_time_days:
+                  type: number
+      responses:
+        "201":
+          description: Offer created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorOffer"
+  /offers/{offer_id}:
+    get:
+      summary: Get offer by ID
+      operationId: getOfferById
+      tags:
+        - Vendor Offers
+      parameters:
+        - name: offer_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Offer details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorOffer"
+    patch:
+      summary: Update vendor offer
+      operationId: updateVendorOffer
+      tags:
+        - Vendor Offers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: offer_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                price:
+                  type: number
+                stock_quantity:
+                  type: number
+                min_order_quantity:
+                  type: number
+                lead_time_days:
+                  type: number
+                status:
+                  type: string
+      responses:
+        "200":
+          description: Offer updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorOffer"
+    delete:
+      summary: Delete vendor offer
+      operationId: deleteVendorOffer
+      tags:
+        - Vendor Offers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: offer_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Offer deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /vendors/{vendor_id}/offers/bulk-update:
+    patch:
+      summary: Bulk update vendor offers
+      operationId: bulkUpdateOffers
+      tags:
+        - Vendor Offers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - offer_ids
+                - update_type
+              properties:
+                offer_ids:
+                  type: array
+                  items:
+                    type: string
+                update_type:
+                  type: string
+                  enum:
+                    - price_adjustment
+                    - stock_update
+                    - status_change
+                price_adjustment:
+                  type: object
+                  properties:
+                    adjustment_type:
+                      type: string
+                      enum:
+                        - percentage
+                        - fixed
+                    value:
+                      type: number
+                stock_quantity:
+                  type: number
+                status:
+                  type: string
+      responses:
+        "200":
+          description: Offers updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated_count:
+                    type: integer
+  /vendors/{vendor_id}/imports:
+    get:
+      summary: Get vendor CSV import history
+      operationId: getVendorImports
+      tags:
+        - CSV Imports
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of imports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    import_id:
+                      type: string
+                    file_name:
+                      type: string
+                    total_rows:
+                      type: number
+                    successful_rows:
+                      type: number
+                    failed_rows:
+                      type: number
+                    status:
+                      type: string
+                    created_at:
+                      type: string
+                      format: date-time
+    post:
+      summary: Upload CSV catalog
+      operationId: uploadCSVCatalog
+      tags:
+        - CSV Imports
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - file_name
+                - column_mapping
+                - rows
+              properties:
+                file_name:
+                  type: string
+                column_mapping:
+                  type: object
+                rows:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        "201":
+          description: Import started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  import_id:
+                    type: string
+                  validation_results:
+                    type: object
+  /vendors/{vendor_id}/imports/{import_id}:
+    get:
+      summary: Get CSV import details
+      operationId: getImportDetails
+      tags:
+        - CSV Imports
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: import_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Import details with errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  import_id:
+                    type: string
+                  status:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        row_number:
+                          type: number
+                        error_message:
+                          type: string
+                        row_data:
+                          type: object
+  /vendors/{vendor_id}/imports/template:
+    get:
+      summary: Download CSV template
+      operationId: downloadCSVTemplate
+      tags:
+        - CSV Imports
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: CSV template
+          content:
+            text/csv:
+              schema:
+                type: string
+  /rfqs:
+    get:
+      summary: Get RFQs for current user
+      operationId: getRFQs
+      tags:
+        - RFQs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum:
+              - draft
+              - active
+              - closed
+              - cancelled
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of RFQs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rfqs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RFQ"
+                  total:
+                    type: integer
+    post:
+      summary: Create new RFQ
+      operationId: createRFQ
+      tags:
+        - RFQs
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - product_id
+                - quantity
+                - delivery_address_id
+              properties:
+                product_id:
+                  type: string
+                quantity:
+                  type: number
+                delivery_address_id:
+                  type: string
+                preferred_delivery_date:
+                  type: string
+                  format: date-time
+                notes:
+                  type: string
+                vendor_ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "201":
+          description: RFQ created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RFQ"
+  /rfqs/{rfq_id}:
+    get:
+      summary: Get RFQ details
+      operationId: getRFQById
+      tags:
+        - RFQs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: rfq_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: RFQ details with quotes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rfq:
+                    $ref: "#/components/schemas/RFQ"
+                  quotes:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Quote"
+                  vendors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        vendor_id:
+                          type: string
+                        status:
+                          type: string
+    patch:
+      summary: Update RFQ
+      operationId: updateRFQ
+      tags:
+        - RFQs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: rfq_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantity:
+                  type: number
+                notes:
+                  type: string
+                status:
+                  type: string
+      responses:
+        "200":
+          description: RFQ updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RFQ"
+    delete:
+      summary: Delete RFQ
+      operationId: deleteRFQ
+      tags:
+        - RFQs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: rfq_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: RFQ deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /rfqs/{rfq_id}/close:
+    patch:
+      summary: Close RFQ
+      operationId: closeRFQ
+      tags:
+        - RFQs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: rfq_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        "200":
+          description: RFQ closed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RFQ"
+  /rfqs/{rfq_id}/vendors:
+    post:
+      summary: Add vendors to RFQ
+      operationId: addVendorsToRFQ
+      tags:
+        - RFQs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: rfq_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - vendor_ids
+              properties:
+                vendor_ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Vendors added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /rfqs/{rfq_id}/attachments:
+    post:
+      summary: Add attachment to RFQ
+      operationId: addRFQAttachment
+      tags:
+        - RFQs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: rfq_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - file_url
+                - file_name
+              properties:
+                file_url:
+                  type: string
+                file_name:
+                  type: string
+      responses:
+        "201":
+          description: Attachment added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attachment_id:
+                    type: string
+  /rfqs/{rfq_id}/messages:
+    get:
+      summary: Get RFQ messages
+      operationId: getRFQMessages
+      tags:
+        - RFQs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: rfq_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: vendor_id
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    message_id:
+                      type: string
+                    sender_id:
+                      type: string
+                    message_text:
+                      type: string
+                    is_read:
+                      type: boolean
+                    created_at:
+                      type: string
+                      format: date-time
+    post:
+      summary: Send RFQ message
+      operationId: sendRFQMessage
+      tags:
+        - RFQs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: rfq_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message_text
+              properties:
+                vendor_id:
+                  type: string
+                message_text:
+                  type: string
+      responses:
+        "201":
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message_id:
+                    type: string
+  /rfqs/{rfq_id}/quotes:
+    get:
+      summary: Get quotes for RFQ
+      operationId: getQuotesForRFQ
+      tags:
+        - Quotes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: rfq_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of quotes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Quote"
+    post:
+      summary: Submit quote for RFQ
+      operationId: submitQuote
+      tags:
+        - Quotes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: rfq_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - price_per_unit
+                - currency
+                - quantity_available
+                - lead_time_days
+                - valid_until
+              properties:
+                price_per_unit:
+                  type: number
+                currency:
+                  type: string
+                quantity_available:
+                  type: number
+                min_order_quantity:
+                  type: number
+                delivery_fee:
+                  type: number
+                lead_time_days:
+                  type: number
+                payment_terms:
+                  type: string
+                valid_until:
+                  type: string
+                  format: date-time
+                notes:
+                  type: string
+      responses:
+        "201":
+          description: Quote submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+  /quotes/{quote_id}:
+    get:
+      summary: Get quote details
+      operationId: getQuoteById
+      tags:
+        - Quotes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: quote_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Quote details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+    patch:
+      summary: Update quote
+      operationId: updateQuote
+      tags:
+        - Quotes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: quote_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                price_per_unit:
+                  type: number
+                quantity_available:
+                  type: number
+                notes:
+                  type: string
+      responses:
+        "200":
+          description: Quote updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+  /quotes/{quote_id}/accept:
+    post:
+      summary: Accept quote
+      operationId: acceptQuote
+      tags:
+        - Quotes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: quote_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Quote accepted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+  /quotes/{quote_id}/negotiate:
+    post:
+      summary: Negotiate quote
+      operationId: negotiateQuote
+      tags:
+        - Quotes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: quote_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                proposed_price:
+                  type: number
+                proposed_quantity:
+                  type: number
+                message:
+                  type: string
+      responses:
+        "201":
+          description: Negotiation started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  negotiation_id:
+                    type: string
+  /orders:
+    get:
+      summary: Get orders for current user
+      operationId: getOrders
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: vendor_id
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orders:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Order"
+                  total:
+                    type: integer
+    post:
+      summary: Create order from accepted quote
+      operationId: createOrder
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quote_id
+              properties:
+                quote_id:
+                  type: string
+      responses:
+        "201":
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+  /orders/{order_id}:
+    get:
+      summary: Get order details
+      operationId: getOrderById
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+    patch:
+      summary: Update order
+      operationId: updateOrder
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+      responses:
+        "200":
+          description: Order updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+  /orders/{order_id}/confirm:
+    post:
+      summary: Vendor confirm order
+      operationId: confirmOrder
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expected_delivery_date:
+                  type: string
+                  format: date-time
+      responses:
+        "200":
+          description: Order confirmed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+  /orders/{order_id}/dispatch:
+    post:
+      summary: Mark order as dispatched
+      operationId: dispatchOrder
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - driver_name
+                - driver_contact
+                - vehicle_number
+              properties:
+                driver_name:
+                  type: string
+                driver_contact:
+                  type: string
+                vehicle_number:
+                  type: string
+                estimated_delivery_time:
+                  type: string
+                  format: date-time
+      responses:
+        "200":
+          description: Order dispatched successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+  /orders/{order_id}/deliver:
+    post:
+      summary: Mark order as delivered
+      operationId: deliverOrder
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - recipient_name
+              properties:
+                recipient_name:
+                  type: string
+                signature_url:
+                  type: string
+                delivery_photo_url:
+                  type: string
+                delivery_notes:
+                  type: string
+      responses:
+        "200":
+          description: Order marked as delivered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+  /orders/{order_id}/collect-payment:
+    post:
+      summary: Confirm cash collection
+      operationId: collectPayment
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount_collected
+                - collected_by
+              properties:
+                amount_collected:
+                  type: number
+                collected_by:
+                  type: string
+                notes:
+                  type: string
+                receipt_number:
+                  type: string
+      responses:
+        "200":
+          description: Payment collected successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  collection_id:
+                    type: string
+  /orders/{order_id}/cancel:
+    post:
+      summary: Cancel order
+      operationId: cancelOrder
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Order cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+  /orders/{order_id}/messages:
+    get:
+      summary: Get order messages
+      operationId: getOrderMessages
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    message_id:
+                      type: string
+                    sender_id:
+                      type: string
+                    message_text:
+                      type: string
+                    created_at:
+                      type: string
+                      format: date-time
+    post:
+      summary: Send order message
+      operationId: sendOrderMessage
+      tags:
+        - Orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message_text
+              properties:
+                message_text:
+                  type: string
+      responses:
+        "201":
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message_id:
+                    type: string
+  /orders/{order_id}/review:
+    post:
+      summary: Submit review for order
+      operationId: submitReview
+      tags:
+        - Reviews
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - overall_rating
+              properties:
+                overall_rating:
+                  type: number
+                  minimum: 1
+                  maximum: 5
+                product_quality_rating:
+                  type: number
+                  minimum: 1
+                  maximum: 5
+                delivery_rating:
+                  type: number
+                  minimum: 1
+                  maximum: 5
+                communication_rating:
+                  type: number
+                  minimum: 1
+                  maximum: 5
+                pricing_rating:
+                  type: number
+                  minimum: 1
+                  maximum: 5
+                review_text:
+                  type: string
+                is_anonymous:
+                  type: boolean
+      responses:
+        "201":
+          description: Review submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+  /reviews/{review_id}:
+    get:
+      summary: Get review details
+      operationId: getReviewById
+      tags:
+        - Reviews
+      parameters:
+        - name: review_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Review details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+    patch:
+      summary: Update review
+      operationId: updateReview
+      tags:
+        - Reviews
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: review_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                review_text:
+                  type: string
+      responses:
+        "200":
+          description: Review updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+  /reviews/{review_id}/helpful:
+    post:
+      summary: Mark review as helpful
+      operationId: markReviewHelpful
+      tags:
+        - Reviews
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: review_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Review marked as helpful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  helpful_count:
+                    type: number
+  /reviews/{review_id}/response:
+    post:
+      summary: Add vendor response to review
+      operationId: respondToReview
+      tags:
+        - Reviews
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: review_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - vendor_response
+              properties:
+                vendor_response:
+                  type: string
+      responses:
+        "200":
+          description: Response added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+  /notifications:
+    get:
+      summary: Get user notifications
+      operationId: getNotifications
+      tags:
+        - Notifications
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: is_read
+          in: query
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notifications:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Notification"
+                  total:
+                    type: integer
+                  unread_count:
+                    type: integer
+  /notifications/{notification_id}:
+    patch:
+      summary: Update notification
+      operationId: updateNotification
+      tags:
+        - Notifications
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: notification_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                is_read:
+                  type: boolean
+                is_archived:
+                  type: boolean
+      responses:
+        "200":
+          description: Notification updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+  /notifications/mark-all-read:
+    patch:
+      summary: Mark all notifications as read
+      operationId: markAllNotificationsRead
+      tags:
+        - Notifications
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: All notifications marked as read
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /notification-preferences:
+    get:
+      summary: Get notification preferences
+      operationId: getNotificationPreferences
+      tags:
+        - Notifications
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Notification preferences
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email_notifications:
+                    type: object
+                  in_app_notifications:
+                    type: object
+                  sms_notifications:
+                    type: object
+    patch:
+      summary: Update notification preferences
+      operationId: updateNotificationPreferences
+      tags:
+        - Notifications
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email_notifications:
+                  type: object
+                in_app_notifications:
+                  type: object
+                sms_notifications:
+                  type: object
+      responses:
+        "200":
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /orders/{order_id}/dispute:
+    post:
+      summary: Create dispute for order
+      operationId: createDispute
+      tags:
+        - Disputes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - issue_type
+                - description
+              properties:
+                issue_type:
+                  type: string
+                  enum:
+                    - quality_issue
+                    - delivery_issue
+                    - pricing_issue
+                    - other
+                description:
+                  type: string
+                preferred_resolution:
+                  type: string
+      responses:
+        "201":
+          description: Dispute created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dispute"
+  /disputes:
+    get:
+      summary: Get disputes
+      operationId: getDisputes
+      tags:
+        - Disputes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum:
+              - open
+              - investigating
+              - resolved
+              - closed
+        - name: issue_type
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of disputes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  disputes:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Dispute"
+                  total:
+                    type: integer
+  /disputes/{dispute_id}:
+    get:
+      summary: Get dispute details
+      operationId: getDisputeById
+      tags:
+        - Disputes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: dispute_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Dispute details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dispute"
+    patch:
+      summary: Update dispute
+      operationId: updateDispute
+      tags:
+        - Disputes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: dispute_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+      responses:
+        "200":
+          description: Dispute updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dispute"
+  /disputes/{dispute_id}/messages:
+    post:
+      summary: Send dispute message
+      operationId: sendDisputeMessage
+      tags:
+        - Disputes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: dispute_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message_text
+              properties:
+                message_text:
+                  type: string
+      responses:
+        "201":
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message_id:
+                    type: string
+  /disputes/{dispute_id}/resolve:
+    post:
+      summary: Resolve dispute
+      operationId: resolveDispute
+      tags:
+        - Disputes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: dispute_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - resolution_decision
+              properties:
+                resolution_decision:
+                  type: string
+                resolution_notes:
+                  type: string
+                resolution_action:
+                  type: string
+      responses:
+        "200":
+          description: Dispute resolved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dispute"
+  /addresses:
+    get:
+      summary: Get user delivery addresses
+      operationId: getAddresses
+      tags:
+        - Addresses
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of addresses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeliveryAddress"
+    post:
+      summary: Add delivery address
+      operationId: addAddress
+      tags:
+        - Addresses
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - address_label
+                - contact_person_name
+                - contact_phone
+                - address_line_1
+                - city
+                - state
+                - postal_code
+              properties:
+                address_label:
+                  type: string
+                contact_person_name:
+                  type: string
+                contact_phone:
+                  type: string
+                address_line_1:
+                  type: string
+                city:
+                  type: string
+                state:
+                  type: string
+                postal_code:
+                  type: string
+                is_default:
+                  type: boolean
+      responses:
+        "201":
+          description: Address added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryAddress"
+  /addresses/{address_id}:
+    get:
+      summary: Get address by ID
+      operationId: getAddressById
+      tags:
+        - Addresses
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: address_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Address details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryAddress"
+    patch:
+      summary: Update address
+      operationId: updateAddress
+      tags:
+        - Addresses
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: address_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                address_label:
+                  type: string
+                contact_person_name:
+                  type: string
+                contact_phone:
+                  type: string
+                is_default:
+                  type: boolean
+      responses:
+        "200":
+          description: Address updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryAddress"
+    delete:
+      summary: Delete address
+      operationId: deleteAddress
+      tags:
+        - Addresses
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: address_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Address deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /favorites/products:
+    get:
+      summary: Get favorite products
+      operationId: getFavoriteProducts
+      tags:
+        - Favorites
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of favorite products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    product:
+                      $ref: "#/components/schemas/CanonicalProduct"
+                    price_alert_enabled:
+                      type: boolean
+    post:
+      summary: Add product to favorites
+      operationId: addFavoriteProduct
+      tags:
+        - Favorites
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - product_id
+              properties:
+                product_id:
+                  type: string
+                price_alert_enabled:
+                  type: boolean
+      responses:
+        "201":
+          description: Product added to favorites
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  favorite_id:
+                    type: string
+  /favorites/products/{product_id}:
+    delete:
+      summary: Remove product from favorites
+      operationId: removeFavoriteProduct
+      tags:
+        - Favorites
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product removed from favorites
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /favorites/vendors:
+    get:
+      summary: Get favorite vendors
+      operationId: getFavoriteVendors
+      tags:
+        - Favorites
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of favorite vendors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VendorProfile"
+    post:
+      summary: Add vendor to favorites
+      operationId: addFavoriteVendor
+      tags:
+        - Favorites
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - vendor_id
+              properties:
+                vendor_id:
+                  type: string
+      responses:
+        "201":
+          description: Vendor added to favorites
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  favorite_id:
+                    type: string
+  /favorites/vendors/{vendor_id}:
+    delete:
+      summary: Remove vendor from favorites
+      operationId: removeFavoriteVendor
+      tags:
+        - Favorites
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Vendor removed from favorites
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /saved-searches:
+    get:
+      summary: Get saved searches
+      operationId: getSavedSearches
+      tags:
+        - Saved Searches
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of saved searches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    saved_search_id:
+                      type: string
+                    search_name:
+                      type: string
+                    search_query:
+                      type: string
+                    filters:
+                      type: object
+                    alerts_enabled:
+                      type: boolean
+    post:
+      summary: Save search
+      operationId: saveSearch
+      tags:
+        - Saved Searches
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - search_name
+              properties:
+                search_name:
+                  type: string
+                search_query:
+                  type: string
+                filters:
+                  type: object
+                alerts_enabled:
+                  type: boolean
+      responses:
+        "201":
+          description: Search saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  saved_search_id:
+                    type: string
+  /saved-searches/{saved_search_id}:
+    get:
+      summary: Get saved search details
+      operationId: getSavedSearchById
+      tags:
+        - Saved Searches
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: saved_search_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Saved search details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  saved_search_id:
+                    type: string
+                  search_name:
+                    type: string
+                  filters:
+                    type: object
+    patch:
+      summary: Update saved search
+      operationId: updateSavedSearch
+      tags:
+        - Saved Searches
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: saved_search_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                search_name:
+                  type: string
+                alerts_enabled:
+                  type: boolean
+      responses:
+        "200":
+          description: Saved search updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+    delete:
+      summary: Delete saved search
+      operationId: deleteSavedSearch
+      tags:
+        - Saved Searches
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: saved_search_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Saved search deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /preferences:
+    get:
+      summary: Get user preferences
+      operationId: getUserPreferences
+      tags:
+        - Preferences
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User preferences
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  preferred_currency:
+                    type: string
+                  language:
+                    type: string
+                  rtl_enabled:
+                    type: boolean
+                  timezone:
+                    type: string
+                  date_format:
+                    type: string
+    patch:
+      summary: Update user preferences
+      operationId: updateUserPreferences
+      tags:
+        - Preferences
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                preferred_currency:
+                  type: string
+                language:
+                  type: string
+                rtl_enabled:
+                  type: boolean
+                timezone:
+                  type: string
+      responses:
+        "200":
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /admin/vendors/pending:
+    get:
+      summary: Get vendors pending verification
+      operationId: getPendingVendors
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of pending vendors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    vendor_id:
+                      type: string
+                    business_name:
+                      type: string
+                    submitted_at:
+                      type: string
+                      format: date-time
+  /admin/vendors/{vendor_id}/verify:
+    post:
+      summary: Verify vendor
+      operationId: verifyVendor
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notes:
+                  type: string
+      responses:
+        "200":
+          description: Vendor verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /admin/vendors/{vendor_id}/reject:
+    post:
+      summary: Reject vendor verification
+      operationId: rejectVendor
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+                message:
+                  type: string
+      responses:
+        "200":
+          description: Vendor rejected successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /admin/users:
+    get:
+      summary: Get all users
+      operationId: getAdminUsers
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+                  total:
+                    type: integer
+  /admin/imports:
+    get:
+      summary: Get all vendor imports
+      operationId: getAdminImports
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: vendor_id
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of imports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    import_id:
+                      type: string
+                    vendor_id:
+                      type: string
+                    status:
+                      type: string
+                    failed_rows:
+                      type: number
+  /admin/audit-logs:
+    get:
+      summary: Get audit logs
+      operationId: getAuditLogs
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: query
+          schema:
+            type: string
+        - name: action_type
+          in: query
+          schema:
+            type: string
+        - name: entity_type
+          in: query
+          schema:
+            type: string
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of audit logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        log_id:
+                          type: string
+                        user_id:
+                          type: string
+                        action_type:
+                          type: string
+                        entity_type:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                  total:
+                    type: integer
+  /admin/settings:
+    get:
+      summary: Get system settings
+      operationId: getSystemSettings
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: System settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  base_currency:
+                    type: string
+                  supported_currencies:
+                    type: array
+                    items:
+                      type: string
+    patch:
+      summary: Update system settings
+      operationId: updateSystemSettings
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                base_currency:
+                  type: string
+                exchange_rates:
+                  type: object
+      responses:
+        "200":
+          description: Settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /vendors/{vendor_id}/webhooks:
+    get:
+      summary: Get vendor webhooks
+      operationId: getVendorWebhooks
+      tags:
+        - Integrations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of webhooks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    webhook_id:
+                      type: string
+                    endpoint_url:
+                      type: string
+                    events:
+                      type: array
+                      items:
+                        type: string
+                    is_active:
+                      type: boolean
+    post:
+      summary: Create webhook
+      operationId: createWebhook
+      tags:
+        - Integrations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - endpoint_url
+                - events
+              properties:
+                endpoint_url:
+                  type: string
+                events:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "201":
+          description: Webhook created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  webhook_id:
+                    type: string
+                  secret_key:
+                    type: string
+  /webhooks/{webhook_id}:
+    patch:
+      summary: Update webhook
+      operationId: updateWebhook
+      tags:
+        - Integrations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: webhook_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                endpoint_url:
+                  type: string
+                events:
+                  type: array
+                  items:
+                    type: string
+                is_active:
+                  type: boolean
+      responses:
+        "200":
+          description: Webhook updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+    delete:
+      summary: Delete webhook
+      operationId: deleteWebhook
+      tags:
+        - Integrations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: webhook_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Webhook deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /vendors/{vendor_id}/api-keys:
+    get:
+      summary: Get vendor API keys
+      operationId: getVendorAPIKeys
+      tags:
+        - Integrations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    api_key_id:
+                      type: string
+                    key_name:
+                      type: string
+                    key_prefix:
+                      type: string
+                    is_active:
+                      type: boolean
+                    created_at:
+                      type: string
+                      format: date-time
+    post:
+      summary: Generate API key
+      operationId: generateAPIKey
+      tags:
+        - Integrations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: vendor_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - key_name
+              properties:
+                key_name:
+                  type: string
+                permissions:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "201":
+          description: API key generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  api_key_id:
+                    type: string
+                  api_key:
+                    type: string
+  /api-keys/{api_key_id}:
+    delete:
+      summary: Revoke API key
+      operationId: revokeAPIKey
+      tags:
+        - Integrations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: api_key_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: API key revoked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /currencies:
+    get:
+      summary: Get supported currencies
+      operationId: getCurrencies
+      tags:
+        - System
+      responses:
+        "200":
+          description: List of currencies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    currency_code:
+                      type: string
+                    currency_name:
+                      type: string
+                    symbol:
+                      type: string
+                    exchange_rate_to_base:
+                      type: number
+  /cities:
+    get:
+      summary: Get cities
+      operationId: getCities
+      tags:
+        - System
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+        - name: state
+          in: query
+          schema:
+            type: string
+        - name: country
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of cities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    city_id:
+                      type: string
+                    city_name:
+                      type: string
+                    state:
+                      type: string
+                    country:
+                      type: string
+  /unit-types:
+    get:
+      summary: Get unit types
+      operationId: getUnitTypes
+      tags:
+        - System
+      responses:
+        "200":
+          description: List of unit types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    unit_type_id:
+                      type: string
+                    unit_name:
+                      type: string
+                    unit_abbreviation:
+                      type: string

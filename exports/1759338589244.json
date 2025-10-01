@@ -1,0 +1,15 @@
+{
+  "timestamp": 1759338589244,
+  "operation": {
+    "id": "backend:specifications:asyncapi"
+  },
+  "projectId": "buildbuy",
+  "files": [
+    {
+      "path": "/mnt/data/buildbuy/backend/asyncapi.yaml",
+      "type": "text",
+      "size": 81036,
+      "dependencies": false
+    }
+  ]
+}
