@@ -27,19 +27,45 @@ const pool = new Pool(
 async function initDb() {
   const client = await pool.connect();
   try {
+    // Check if database is already initialized
+    const checkResult = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'users'
+      );
+    `);
+    const dbExists = checkResult.rows[0].exists;
+    
+    if (dbExists) {
+      console.log('Database already initialized. Skipping initialization.');
+      return;
+    }
+    
     // Begin transaction
     await client.query('BEGIN');
     
     // Read and split SQL commands
-    const dbInitCommands = fs
-      .readFileSync(`./db.sql`, "utf-8")
-      .toString()
-      .split(/(?=CREATE TABLE |INSERT INTO)/);
+    const sqlContent = fs.readFileSync(`./db.sql`, "utf-8").toString();
+    const dbInitCommands = sqlContent.split(/(?=CREATE TABLE IF NOT EXISTS|INSERT INTO|ALTER TABLE)/g);
 
     // Execute each command
     for (let cmd of dbInitCommands) {
-      console.dir({ "backend:db:init:command": cmd });
-      await client.query(cmd);
+      const trimmedCmd = cmd.trim();
+      if (!trimmedCmd) continue;
+      
+      console.dir({ "backend:db:init:command": trimmedCmd.substring(0, 100) + '...' });
+      try {
+        await client.query(trimmedCmd);
+      } catch (err) {
+        // Log but continue for some safe-to-ignore errors
+        if (err.code === '42P07') {
+          console.log('Table already exists, continuing...');
+        } else if (err.code === '42710') {
+          console.log('Object already exists, continuing...');
+        } else {
+          throw err;
+        }
+      }
     }
 
     // Commit transaction
@@ -47,7 +73,11 @@ async function initDb() {
     console.log('Database initialization completed successfully');
   } catch (e) {
     // Rollback on error
-    await client.query('ROLLBACK');
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackErr) {
+      console.error('Rollback failed:', rollbackErr);
+    }
     console.error('Database initialization failed:', e);
     throw e;
   } finally {

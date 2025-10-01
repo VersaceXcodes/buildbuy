@@ -3,7 +3,7 @@
 -- ============================================
 
 -- Users table (foundational)
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     user_id TEXT PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE users (
 );
 
 -- Organizations table
-CREATE TABLE organizations (
+CREATE TABLE IF NOT EXISTS organizations (
     organization_id TEXT PRIMARY KEY,
     organization_name TEXT NOT NULL,
     industry TEXT,
@@ -57,7 +57,7 @@ ALTER TABLE organizations ADD CONSTRAINT fk_organizations_created_by
     FOREIGN KEY (created_by) REFERENCES users(user_id);
 
 -- Organization invitations
-CREATE TABLE organization_invitations (
+CREATE TABLE IF NOT EXISTS organization_invitations (
     invitation_id TEXT PRIMARY KEY,
     organization_id TEXT NOT NULL REFERENCES organizations(organization_id),
     email TEXT NOT NULL,
@@ -71,7 +71,7 @@ CREATE TABLE organization_invitations (
 );
 
 -- Auth sessions
-CREATE TABLE auth_sessions (
+CREATE TABLE IF NOT EXISTS auth_sessions (
     session_id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(user_id),
     auth_token TEXT UNIQUE NOT NULL,
@@ -85,7 +85,7 @@ CREATE TABLE auth_sessions (
 );
 
 -- Magic links
-CREATE TABLE magic_links (
+CREATE TABLE IF NOT EXISTS magic_links (
     magic_link_id TEXT PRIMARY KEY,
     email TEXT NOT NULL,
     token TEXT UNIQUE NOT NULL,
@@ -96,7 +96,7 @@ CREATE TABLE magic_links (
 );
 
 -- Delivery addresses
-CREATE TABLE delivery_addresses (
+CREATE TABLE IF NOT EXISTS delivery_addresses (
     address_id TEXT PRIMARY KEY,
     user_id TEXT REFERENCES users(user_id),
     organization_id TEXT REFERENCES organizations(organization_id),
@@ -116,7 +116,7 @@ CREATE TABLE delivery_addresses (
 );
 
 -- Categories
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
     category_id TEXT PRIMARY KEY,
     category_name TEXT NOT NULL,
     parent_category_id TEXT REFERENCES categories(category_id),
@@ -129,7 +129,7 @@ CREATE TABLE categories (
 );
 
 -- Brands
-CREATE TABLE brands (
+CREATE TABLE IF NOT EXISTS brands (
     brand_id TEXT PRIMARY KEY,
     brand_name TEXT UNIQUE NOT NULL,
     logo_url TEXT,
@@ -141,7 +141,7 @@ CREATE TABLE brands (
 );
 
 -- Unit types
-CREATE TABLE unit_types (
+CREATE TABLE IF NOT EXISTS unit_types (
     unit_type_id TEXT PRIMARY KEY,
     unit_name TEXT UNIQUE NOT NULL,
     unit_abbreviation TEXT,
@@ -150,7 +150,7 @@ CREATE TABLE unit_types (
 );
 
 -- Canonical products
-CREATE TABLE canonical_products (
+CREATE TABLE IF NOT EXISTS canonical_products (
     product_id TEXT PRIMARY KEY,
     product_name TEXT NOT NULL,
     brand_id TEXT NOT NULL REFERENCES brands(brand_id),
@@ -167,7 +167,7 @@ CREATE TABLE canonical_products (
 );
 
 -- Product images
-CREATE TABLE product_images (
+CREATE TABLE IF NOT EXISTS product_images (
     image_id TEXT PRIMARY KEY,
     product_id TEXT NOT NULL REFERENCES canonical_products(product_id),
     image_url TEXT NOT NULL,
@@ -177,7 +177,7 @@ CREATE TABLE product_images (
 );
 
 -- Vendor profiles
-CREATE TABLE vendor_profiles (
+CREATE TABLE IF NOT EXISTS vendor_profiles (
     vendor_id TEXT PRIMARY KEY REFERENCES users(user_id),
     business_name TEXT NOT NULL,
     business_type TEXT,
@@ -204,7 +204,7 @@ CREATE TABLE vendor_profiles (
 );
 
 -- Vendor documents
-CREATE TABLE vendor_documents (
+CREATE TABLE IF NOT EXISTS vendor_documents (
     document_id TEXT PRIMARY KEY,
     vendor_id TEXT NOT NULL REFERENCES vendor_profiles(vendor_id),
     document_type TEXT NOT NULL,
@@ -218,7 +218,7 @@ CREATE TABLE vendor_documents (
 );
 
 -- Vendor service areas
-CREATE TABLE vendor_service_areas (
+CREATE TABLE IF NOT EXISTS vendor_service_areas (
     service_area_id TEXT PRIMARY KEY,
     vendor_id TEXT NOT NULL REFERENCES vendor_profiles(vendor_id),
     city_id TEXT NOT NULL,
@@ -232,7 +232,7 @@ CREATE TABLE vendor_service_areas (
 );
 
 -- Vendor offers
-CREATE TABLE vendor_offers (
+CREATE TABLE IF NOT EXISTS vendor_offers (
     offer_id TEXT PRIMARY KEY,
     vendor_id TEXT NOT NULL REFERENCES vendor_profiles(vendor_id),
     product_id TEXT NOT NULL REFERENCES canonical_products(product_id),
@@ -250,7 +250,7 @@ CREATE TABLE vendor_offers (
 );
 
 -- CSV imports
-CREATE TABLE csv_imports (
+CREATE TABLE IF NOT EXISTS csv_imports (
     import_id TEXT PRIMARY KEY,
     vendor_id TEXT NOT NULL REFERENCES vendor_profiles(vendor_id),
     file_name TEXT NOT NULL,
@@ -267,7 +267,7 @@ CREATE TABLE csv_imports (
 );
 
 -- CSV import errors
-CREATE TABLE csv_import_errors (
+CREATE TABLE IF NOT EXISTS csv_import_errors (
     error_id TEXT PRIMARY KEY,
     import_id TEXT NOT NULL REFERENCES csv_imports(import_id),
     row_number INTEGER NOT NULL,
@@ -282,7 +282,7 @@ CREATE TABLE csv_import_errors (
 );
 
 -- RFQs
-CREATE TABLE rfqs (
+CREATE TABLE IF NOT EXISTS rfqs (
     rfq_id TEXT PRIMARY KEY,
     rfq_number TEXT UNIQUE NOT NULL,
     buyer_id TEXT NOT NULL REFERENCES users(user_id),
@@ -301,7 +301,7 @@ CREATE TABLE rfqs (
 );
 
 -- RFQ attachments
-CREATE TABLE rfq_attachments (
+CREATE TABLE IF NOT EXISTS rfq_attachments (
     attachment_id TEXT PRIMARY KEY,
     rfq_id TEXT NOT NULL REFERENCES rfqs(rfq_id),
     file_name TEXT NOT NULL,
@@ -311,7 +311,7 @@ CREATE TABLE rfq_attachments (
 );
 
 -- RFQ vendors
-CREATE TABLE rfq_vendors (
+CREATE TABLE IF NOT EXISTS rfq_vendors (
     rfq_vendor_id TEXT PRIMARY KEY,
     rfq_id TEXT NOT NULL REFERENCES rfqs(rfq_id),
     vendor_id TEXT NOT NULL REFERENCES vendor_profiles(vendor_id),
@@ -322,7 +322,7 @@ CREATE TABLE rfq_vendors (
 );
 
 -- Quotes
-CREATE TABLE quotes (
+CREATE TABLE IF NOT EXISTS quotes (
     quote_id TEXT PRIMARY KEY,
     rfq_id TEXT NOT NULL REFERENCES rfqs(rfq_id),
     vendor_id TEXT NOT NULL REFERENCES vendor_profiles(vendor_id),
@@ -343,7 +343,7 @@ CREATE TABLE quotes (
 );
 
 -- Quote attachments
-CREATE TABLE quote_attachments (
+CREATE TABLE IF NOT EXISTS quote_attachments (
     attachment_id TEXT PRIMARY KEY,
     quote_id TEXT NOT NULL REFERENCES quotes(quote_id),
     file_name TEXT NOT NULL,
@@ -353,7 +353,7 @@ CREATE TABLE quote_attachments (
 );
 
 -- Negotiations
-CREATE TABLE negotiations (
+CREATE TABLE IF NOT EXISTS negotiations (
     negotiation_id TEXT PRIMARY KEY,
     quote_id TEXT NOT NULL REFERENCES quotes(quote_id),
     rfq_id TEXT NOT NULL REFERENCES rfqs(rfq_id),
@@ -368,7 +368,7 @@ CREATE TABLE negotiations (
 );
 
 -- RFQ messages
-CREATE TABLE rfq_messages (
+CREATE TABLE IF NOT EXISTS rfq_messages (
     message_id TEXT PRIMARY KEY,
     rfq_id TEXT NOT NULL REFERENCES rfqs(rfq_id),
     vendor_id TEXT REFERENCES vendor_profiles(vendor_id),
@@ -380,7 +380,7 @@ CREATE TABLE rfq_messages (
 );
 
 -- RFQ message attachments
-CREATE TABLE rfq_message_attachments (
+CREATE TABLE IF NOT EXISTS rfq_message_attachments (
     attachment_id TEXT PRIMARY KEY,
     message_id TEXT NOT NULL REFERENCES rfq_messages(message_id),
     file_name TEXT NOT NULL,
@@ -390,7 +390,7 @@ CREATE TABLE rfq_message_attachments (
 );
 
 -- Orders
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
     order_id TEXT PRIMARY KEY,
     order_number TEXT UNIQUE NOT NULL,
     rfq_id TEXT NOT NULL REFERENCES rfqs(rfq_id),
@@ -418,7 +418,7 @@ CREATE TABLE orders (
 );
 
 -- Order status history
-CREATE TABLE order_status_history (
+CREATE TABLE IF NOT EXISTS order_status_history (
     history_id TEXT PRIMARY KEY,
     order_id TEXT NOT NULL REFERENCES orders(order_id),
     previous_status TEXT,
@@ -429,7 +429,7 @@ CREATE TABLE order_status_history (
 );
 
 -- Delivery details
-CREATE TABLE delivery_details (
+CREATE TABLE IF NOT EXISTS delivery_details (
     delivery_id TEXT PRIMARY KEY,
     order_id TEXT UNIQUE NOT NULL REFERENCES orders(order_id),
     driver_name TEXT,
@@ -446,7 +446,7 @@ CREATE TABLE delivery_details (
 );
 
 -- Cash collections
-CREATE TABLE cash_collections (
+CREATE TABLE IF NOT EXISTS cash_collections (
     collection_id TEXT PRIMARY KEY,
     order_id TEXT UNIQUE NOT NULL REFERENCES orders(order_id),
     amount_collected NUMERIC NOT NULL,
@@ -462,7 +462,7 @@ CREATE TABLE cash_collections (
 );
 
 -- Order documents
-CREATE TABLE order_documents (
+CREATE TABLE IF NOT EXISTS order_documents (
     document_id TEXT PRIMARY KEY,
     order_id TEXT NOT NULL REFERENCES orders(order_id),
     document_type TEXT NOT NULL,
@@ -473,7 +473,7 @@ CREATE TABLE order_documents (
 );
 
 -- Order messages
-CREATE TABLE order_messages (
+CREATE TABLE IF NOT EXISTS order_messages (
     message_id TEXT PRIMARY KEY,
     order_id TEXT NOT NULL REFERENCES orders(order_id),
     sender_id TEXT NOT NULL REFERENCES users(user_id),
@@ -484,7 +484,7 @@ CREATE TABLE order_messages (
 );
 
 -- Order message attachments
-CREATE TABLE order_message_attachments (
+CREATE TABLE IF NOT EXISTS order_message_attachments (
     attachment_id TEXT PRIMARY KEY,
     message_id TEXT NOT NULL REFERENCES order_messages(message_id),
     file_name TEXT NOT NULL,
@@ -494,7 +494,7 @@ CREATE TABLE order_message_attachments (
 );
 
 -- Disputes
-CREATE TABLE disputes (
+CREATE TABLE IF NOT EXISTS disputes (
     dispute_id TEXT PRIMARY KEY,
     order_id TEXT NOT NULL REFERENCES orders(order_id),
     raised_by TEXT NOT NULL REFERENCES users(user_id),
@@ -514,7 +514,7 @@ CREATE TABLE disputes (
 );
 
 -- Dispute evidence
-CREATE TABLE dispute_evidence (
+CREATE TABLE IF NOT EXISTS dispute_evidence (
     evidence_id TEXT PRIMARY KEY,
     dispute_id TEXT NOT NULL REFERENCES disputes(dispute_id),
     uploaded_by TEXT NOT NULL REFERENCES users(user_id),
@@ -525,7 +525,7 @@ CREATE TABLE dispute_evidence (
 );
 
 -- Dispute messages
-CREATE TABLE dispute_messages (
+CREATE TABLE IF NOT EXISTS dispute_messages (
     message_id TEXT PRIMARY KEY,
     dispute_id TEXT NOT NULL REFERENCES disputes(dispute_id),
     sender_id TEXT NOT NULL REFERENCES users(user_id),
@@ -535,7 +535,7 @@ CREATE TABLE dispute_messages (
 );
 
 -- Reviews
-CREATE TABLE reviews (
+CREATE TABLE IF NOT EXISTS reviews (
     review_id TEXT PRIMARY KEY,
     order_id TEXT UNIQUE NOT NULL REFERENCES orders(order_id),
     buyer_id TEXT NOT NULL REFERENCES users(user_id),
@@ -560,7 +560,7 @@ CREATE TABLE reviews (
 );
 
 -- Review photos
-CREATE TABLE review_photos (
+CREATE TABLE IF NOT EXISTS review_photos (
     photo_id TEXT PRIMARY KEY,
     review_id TEXT NOT NULL REFERENCES reviews(review_id),
     photo_url TEXT NOT NULL,
@@ -568,7 +568,7 @@ CREATE TABLE review_photos (
 );
 
 -- Review helpfulness
-CREATE TABLE review_helpfulness (
+CREATE TABLE IF NOT EXISTS review_helpfulness (
     helpfulness_id TEXT PRIMARY KEY,
     review_id TEXT NOT NULL REFERENCES reviews(review_id),
     user_id TEXT NOT NULL REFERENCES users(user_id),
@@ -576,7 +576,7 @@ CREATE TABLE review_helpfulness (
 );
 
 -- Notifications
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS notifications (
     notification_id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(user_id),
     notification_type TEXT NOT NULL,
@@ -594,7 +594,7 @@ CREATE TABLE notifications (
 );
 
 -- Notification preferences
-CREATE TABLE notification_preferences (
+CREATE TABLE IF NOT EXISTS notification_preferences (
     preference_id TEXT PRIMARY KEY,
     user_id TEXT UNIQUE NOT NULL REFERENCES users(user_id),
     email_notifications JSON NOT NULL,
@@ -607,7 +607,7 @@ CREATE TABLE notification_preferences (
 );
 
 -- Saved searches
-CREATE TABLE saved_searches (
+CREATE TABLE IF NOT EXISTS saved_searches (
     saved_search_id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(user_id),
     search_name TEXT NOT NULL,
@@ -623,7 +623,7 @@ CREATE TABLE saved_searches (
 );
 
 -- Favorite products
-CREATE TABLE favorite_products (
+CREATE TABLE IF NOT EXISTS favorite_products (
     favorite_id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(user_id),
     product_id TEXT NOT NULL REFERENCES canonical_products(product_id),
@@ -633,7 +633,7 @@ CREATE TABLE favorite_products (
 );
 
 -- Favorite vendors
-CREATE TABLE favorite_vendors (
+CREATE TABLE IF NOT EXISTS favorite_vendors (
     favorite_id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(user_id),
     vendor_id TEXT NOT NULL REFERENCES vendor_profiles(vendor_id),
@@ -641,7 +641,7 @@ CREATE TABLE favorite_vendors (
 );
 
 -- Recently viewed products
-CREATE TABLE recently_viewed_products (
+CREATE TABLE IF NOT EXISTS recently_viewed_products (
     view_id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(user_id),
     product_id TEXT NOT NULL REFERENCES canonical_products(product_id),
@@ -649,7 +649,7 @@ CREATE TABLE recently_viewed_products (
 );
 
 -- User preferences
-CREATE TABLE user_preferences (
+CREATE TABLE IF NOT EXISTS user_preferences (
     preference_id TEXT PRIMARY KEY,
     user_id TEXT UNIQUE NOT NULL REFERENCES users(user_id),
     preferred_currency TEXT NOT NULL DEFAULT 'USD',
@@ -661,7 +661,7 @@ CREATE TABLE user_preferences (
 );
 
 -- API keys
-CREATE TABLE api_keys (
+CREATE TABLE IF NOT EXISTS api_keys (
     api_key_id TEXT PRIMARY KEY,
     vendor_id TEXT NOT NULL REFERENCES vendor_profiles(vendor_id),
     key_name TEXT NOT NULL,
@@ -674,7 +674,7 @@ CREATE TABLE api_keys (
 );
 
 -- Webhooks
-CREATE TABLE webhooks (
+CREATE TABLE IF NOT EXISTS webhooks (
     webhook_id TEXT PRIMARY KEY,
     vendor_id TEXT NOT NULL REFERENCES vendor_profiles(vendor_id),
     endpoint_url TEXT NOT NULL,
@@ -686,7 +686,7 @@ CREATE TABLE webhooks (
 );
 
 -- Webhook logs
-CREATE TABLE webhook_logs (
+CREATE TABLE IF NOT EXISTS webhook_logs (
     log_id TEXT PRIMARY KEY,
     webhook_id TEXT NOT NULL REFERENCES webhooks(webhook_id),
     event_type TEXT NOT NULL,
@@ -699,7 +699,7 @@ CREATE TABLE webhook_logs (
 );
 
 -- Audit logs
-CREATE TABLE audit_logs (
+CREATE TABLE IF NOT EXISTS audit_logs (
     log_id TEXT PRIMARY KEY,
     user_id TEXT REFERENCES users(user_id),
     action_type TEXT NOT NULL,
@@ -714,7 +714,7 @@ CREATE TABLE audit_logs (
 );
 
 -- System settings
-CREATE TABLE system_settings (
+CREATE TABLE IF NOT EXISTS system_settings (
     setting_key TEXT PRIMARY KEY,
     setting_value JSON NOT NULL,
     setting_type TEXT NOT NULL,
@@ -724,7 +724,7 @@ CREATE TABLE system_settings (
 );
 
 -- Currencies
-CREATE TABLE currencies (
+CREATE TABLE IF NOT EXISTS currencies (
     currency_code TEXT PRIMARY KEY,
     currency_name TEXT NOT NULL,
     symbol TEXT NOT NULL,
@@ -734,7 +734,7 @@ CREATE TABLE currencies (
 );
 
 -- Cities
-CREATE TABLE cities (
+CREATE TABLE IF NOT EXISTS cities (
     city_id TEXT PRIMARY KEY,
     city_name TEXT NOT NULL,
     state TEXT NOT NULL,
@@ -745,7 +745,7 @@ CREATE TABLE cities (
 );
 
 -- Product merges
-CREATE TABLE product_merges (
+CREATE TABLE IF NOT EXISTS product_merges (
     merge_id TEXT PRIMARY KEY,
     primary_product_id TEXT NOT NULL REFERENCES canonical_products(product_id),
     merged_product_ids JSON NOT NULL,
@@ -757,7 +757,7 @@ CREATE TABLE product_merges (
 );
 
 -- Announcements
-CREATE TABLE announcements (
+CREATE TABLE IF NOT EXISTS announcements (
     announcement_id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     message TEXT NOT NULL,
@@ -772,7 +772,7 @@ CREATE TABLE announcements (
 );
 
 -- Price history
-CREATE TABLE price_history (
+CREATE TABLE IF NOT EXISTS price_history (
     history_id TEXT PRIMARY KEY,
     offer_id TEXT NOT NULL REFERENCES vendor_offers(offer_id),
     product_id TEXT NOT NULL REFERENCES canonical_products(product_id),
@@ -783,7 +783,7 @@ CREATE TABLE price_history (
 );
 
 -- Email logs
-CREATE TABLE email_logs (
+CREATE TABLE IF NOT EXISTS email_logs (
     email_log_id TEXT PRIMARY KEY,
     recipient_email TEXT NOT NULL,
     email_type TEXT NOT NULL,
@@ -798,7 +798,7 @@ CREATE TABLE email_logs (
 );
 
 -- SMS logs
-CREATE TABLE sms_logs (
+CREATE TABLE IF NOT EXISTS sms_logs (
     sms_log_id TEXT PRIMARY KEY,
     recipient_phone TEXT NOT NULL,
     sms_type TEXT NOT NULL,
